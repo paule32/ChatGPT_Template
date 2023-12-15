@@ -104,6 +104,8 @@ try:
     import sys           # system specifies
     import datetime      # date, and time routines
     import gettext       # localization
+    import locale        # internal system locale
+    import configparser  # .ini files
     
     from PyQt5.QtWidgets import *         # Qt5 widgets
     from PyQt5.QtGui     import QIcon     # Qt5 gui
@@ -111,7 +113,42 @@ try:
     
     from openai import OpenAI             # ChatGPT like AI
     
-    _ = gettext.gettext                   # like a macro for translations
+    # ------------------------------------------------
+    # wir wollen die bestmögliche preferences - von
+    # daher nutzen wir eine config.ini Datei, die
+    # Einstellungen für den Benutzer speichern und
+    # lesen kann.
+    # Was in der .ini Datei an Informationen zu lesen
+    # gibt, die sinnvoll ausgewertet werden können,
+    # haben eine höhere Priorität.
+    # ------------------------------------------------
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    
+    ini_sprache = config.get("common", "language")
+    
+    # ------------------------------------------------
+    # locales an Hand der System-Sprache verwenden ...
+    # ------------------------------------------------
+    system_sprache, _ = locale.getdefaultlocale()
+    if   system_sprache.lower() == "en_us":
+         if ini_sprache.lower() == "en":
+            loca = gettext.translation("base", localedir="locales", languages=["en"])  # english
+         if ini_sprache.lower() == "de":
+            loca = gettext.translation("base", localedir="locales", languages=["de"])  # german
+    elif system_sprache.lower() == "de_de":
+         if ini_sprache.lower() == "en":
+            loca = gettext.translation("base", localedir="locales", languages=["en"])  # english
+         if ini_sprache.lower() == "de":
+            loca = gettext.translation("base", localedir="locales", languages=["de"])  # german
+    else:
+            loca = gettext.translation("base", localedir="locales", languages=["en"])  # fallback
+         
+    # ------------------------------------------------
+    # ermittelte Locale als Standard verwenden:
+    # ------------------------------------------------
+    loca.install()
+    _  = loca.gettext
     
     S1 = _("Fehler: ")
     S2 = _("Programm abgebrochen.\nGrund: ")
@@ -121,6 +158,15 @@ except ImportError as ex:
     sys.exit(TS0)
 except AttributeError as ex:
     TS0 = S1 + S2 + _("Attribut oder Methode für Objekt nicht vorhanden: ") + f"{ex}"
+    sys.exit(TS0)
+except KeyError as ex:
+    TS0 = S1 + S2 + _("Dictionary-Schlüsselelement nicht vorhanden.") + f"{ex}"
+    sys.exit(TS0)
+except FileNotFoundError as ex:
+    TS0 = "Datei wurde nicht gefunden: " + f"{ex}"
+    sys.exit(TS0)
+except Exception as ex:
+    TS0 = "Fehler: " + f"{ex}"
     sys.exit(TS0)
 
 # ----------------------------------------------------------------------------
@@ -142,9 +188,9 @@ class HauptFenster(QMainWindow):
         # ein neues Menu erzeugen ...
         # ----------------------------------------
         menubar = self.menuBar()
-        menu_file = menubar.addMenu("File")
-        menu_edit = menubar.addMenu("Edit")
-        menu_help = menubar.addMenu("Help")
+        menu_file = menubar.addMenu(_("Datei"))
+        menu_edit = menubar.addMenu(_("Bearbeiten"))
+        menu_help = menubar.addMenu(_("Hilfe"))
         
         # ----------------------------------------
         # Menü-Aktionen hinzufügen ...
@@ -163,8 +209,8 @@ class HauptFenster(QMainWindow):
         central_layout = QVBoxLayout(central_widget)
         
         checkbox_header = QHBoxLayout()
-        checkbox_header_left  = QCheckBox("Select All")
-        checkbox_header_right = QCheckBox("Select All")
+        checkbox_header_left  = QCheckBox("Alles auswählen")
+        checkbox_header_right = QCheckBox("Alles auswählen")
         
         checkbox_header_left.setMaximumWidth(200)
         checkbox_header_left.setMinimumWidth(200)
@@ -343,8 +389,8 @@ if __name__ == "__main__":
         print(S1 + "Datei oder Verzeichnis existiert nicht.")
     except IndexError:
         print(S1 + "Index für Element liegt ausserhalb des gültigen Bereiches")
-    except KeyError:
-        print(S1 + "Dictionary-Schlüsselelement nicht vorhanden.")
+    except KeyError as ex:
+        print(S1 + "Dictionary-Schlüsselelement nicht vorhanden." + f"{ex}")
     except AttributeError as ex:
         print(S1 + "Attribut oder Methode für Objekt nicht vorhanden: " + f"{ex}")
     except RuntimeError:
