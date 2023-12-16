@@ -105,6 +105,7 @@ try:
     import datetime      # date, and time routines
     import gettext       # localization
     import locale        # internal system locale
+    import sqlite3       # database: sqlite
     import configparser  # .ini files
     
     from PyQt5.QtWidgets import *         # Qt5 widgets
@@ -175,8 +176,19 @@ except Exception as ex:
 # importiert werden.
 # ----------------------------------------------------------------------------
 def get_current_time():
-    return datetime.datetime.now().strftime('%H:%M')
+    return datetime.datetime.now().strftime("%H_%M")
 
+# ----------------------------------------------------------------------------
+# und mit dieser Funktion lassen können wir das lokale System ermitteln. Mit
+# der Funktion "strftime" kann das Format der zurück zugebene Zeichenketten
+# festgelegt werden.
+# ----------------------------------------------------------------------------
+def get_current_date():
+    return datetime.datetime.now().strftime("%Y_%m_%d")
+
+# ----------------------------------------------------------------------------
+# das HauptFenster ist unsere Haupt-Anwendung GUI (graphical user interface).
+# ----------------------------------------------------------------------------
 class HauptFenster(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -204,9 +216,11 @@ class HauptFenster(QMainWindow):
         # Menü-Aktionen hinzufügen ...
         # ----------------------------------------
         menu_file_new    = QAction("Neue Sitzung",self)
+        menu_file.addSeparator()
         menu_file_open   = QAction("Öffnen",self)
         menu_file_save   = QAction("Speichern",self)
         menu_file_saveas = QAction("Speichern als",self)
+        menu_file.addSeparator()
         menu_file_exit   = QAction("Beenden",self)
         
         menu_font = menu_file.font()
@@ -243,17 +257,17 @@ class HauptFenster(QMainWindow):
         central_layout = QVBoxLayout(central_widget)
         
         checkbox_header = QHBoxLayout()
-        checkbox_header_left  = QCheckBox("Alles auswählen")
-        checkbox_header_right = QCheckBox("Alles auswählen")
+        self.checkbox_header_left  = QCheckBox("Alles auswählen")
+        self.checkbox_header_right = QCheckBox("Alles auswählen")
         
-        checkbox_header_left.setMaximumWidth(200)
-        checkbox_header_left.setMinimumWidth(200)
+        self.checkbox_header_left.setMaximumWidth(200)
+        self.checkbox_header_left.setMinimumWidth(200)
         
-        checkbox_header.addWidget(checkbox_header_left)
-        checkbox_header.addWidget(checkbox_header_right)
+        checkbox_header.addWidget(self.checkbox_header_left)
+        checkbox_header.addWidget(self.checkbox_header_right)
         
         button_chat_part_save   = QPushButton("Speichern")
-        button_chat_part_delete = QPushButton("Löschen markierte Einträge")
+        button_chat_part_delete = QPushButton("Lösche markierte Einträge")
         
         checkbox_header.addWidget(button_chat_part_save)
         checkbox_header.addWidget(button_chat_part_delete)
@@ -264,8 +278,8 @@ class HauptFenster(QMainWindow):
         # Das stateChanged-Signal mit einer Funktion
         # verknüpfen
         # ------------------------------------------
-        checkbox_header_left .stateChanged.connect(self.checkbox_click_header_left )
-        checkbox_header_right.stateChanged.connect(self.checkbox_click_header_right)
+        self.checkbox_header_left .stateChanged.connect(self.checkbox_click_header_left )
+        self.checkbox_header_right.stateChanged.connect(self.checkbox_click_header_right)
         
         # ----------------------------------------
         # Layout-Container vorbereiten ...
@@ -326,10 +340,41 @@ class HauptFenster(QMainWindow):
         self.listbox_widget_left.setMinimumWidth(200)
         
         for i in range(5):
-            item = QListWidgetItem(f"Element {i}")
+            item = QListWidgetItem()
+            
+            # -----------------------------------------
+            # ein benutzerdefiniertes Widget erstellen
+            # -----------------------------------------
+            custom_widget = QWidget()
+            
             check_box = QCheckBox()
+            check_box.setChecked(False)
+            check_box.setMaximumWidth(15)
+            
+            push_button = QPushButton("DEL")
+            push_button.setMaximumWidth(50)
+            
+            date_label  = QLabel("Datum")
+            name_label  = QLabel("Name der Session")
+            
+            custom_layout_0 = QVBoxLayout(custom_widget)
+            custom_layout_1 = QHBoxLayout()
+            custom_layout_2 = QHBoxLayout()
+            
+            custom_layout_1.addWidget(check_box)
+            custom_layout_1.addWidget(date_label)
+            custom_layout_1.addWidget(push_button)
+            
+            custom_layout_2.addWidget(name_label)
+            
+            custom_layout_0.addLayout(custom_layout_1)
+            custom_layout_0.addLayout(custom_layout_2)
+            
+            item.setSizeHint(custom_widget.sizeHint())
+            
             self.listbox_widget_left.addItem(item)
-            self.listbox_widget_left.setItemWidget(item, check_box)
+            self.listbox_widget_left.setItemWidget(item, custom_widget)
+        
         
         entryfield_left = QLineEdit(central_widget)
         entryfield_left.setMaximumWidth(200)
@@ -391,7 +436,11 @@ class HauptFenster(QMainWindow):
     # Menu Aktion-Event's ...
     # ----------------------------------------
     def menu_file_clicked_new(self):
-        print("new clicked")
+        self.listbox_widget_left.clear()
+        self.listbox_widget     .clear()
+        
+        self.checkbox_header_left .setChecked(False)
+        self.checkbox_header_right.setChecked(False)
     
     def menu_file_clicked_open(self):
         print("open clicked")
@@ -415,12 +464,12 @@ class HauptFenster(QMainWindow):
             for index in range(self.listbox_widget.count()):
                 item     = self.listbox_widget.item(index)
                 checkbox = self.listbox_widget.itemWidget(item)
-                checkbox.setCheckState(2)
+                checkbox.setChecked(True)
         else:
             for index in range(self.listbox_widget.count()):
                 item     = self.listbox_widget.item(index)
                 checkbox = self.listbox_widget.itemWidget(item)
-                checkbox.setCheckState(0)
+                checkbox.setChecked(False)
     
     # ----------------------------------------
     # linke checkbox: Alles auswählen
@@ -431,12 +480,12 @@ class HauptFenster(QMainWindow):
             for index in range(self.listbox_widget_left.count()):
                 item     = self.listbox_widget_left.item(index)
                 checkbox = self.listbox_widget_left.itemWidget(item)
-                checkbox.setCheckState(2)
+                checkbox.setChecked(True)
         else:
             for index in range(self.listbox_widget_left.count()):
                 item     = self.listbox_widget_left.item(index)
                 checkbox = self.listbox_widget_left.itemWidget(item)
-                checkbox.setCheckState(0)
+                checkbox.setChecked(False)
 
 # ----------------------------------------------------------------------------
 # dies wird unsere "main" - Einstiegs-Funktions werden, ab der Python beginnt,
@@ -444,8 +493,79 @@ class HauptFenster(QMainWindow):
 # ----------------------------------------------------------------------------
 def window():
     app = QApplication(sys.argv)
+
+    # ------------------------------------------------------------------------
+    # bevor wir loslegen, erstmal prüfen, ob Verzeichnisse und andere Dateien
+    # bereits vorhanden sind - wenn nicht, versuchen wir diese zu ersellen.
+    # ------------------------------------------------------------------------
+    data_path  = ".\data"
+    loca_path  = ".\locales"
+    
+    if (os.path.exists(data_path) and os.path.isdir(data_path)) == False:
+        print(_("erstelle: .\data"))
+        os.makedirs(data_path, exist_ok=True)
+    
+    if (os.path.exists(loca_path) and os.path.isdir(loca_path)) == False:
+        print(_("localization wird nicht unterstützt."))
+    
+    time_today = get_current_time()  # aktuelle  Zeit für Datenbank-Name
+    date_today = get_current_date()  # aktuelles Datum ...
+    
+    # ------------------------------------------------------------------------
+    # Verbindung zur Datenbank herstellen. Die Datenbank ist SQLite. Sie kann
+    # lokal auf dem Benutzer-Computer System abgespeichert werden und bietet
+    # die Möglichkeit kleine Datenmengen zu speichern, die keinen Datenbank-
+    # Server benötigen.
+    # ------------------------------------------------------------------------
+    date_stamp = f"{date_today}" + "__" + f"{time_today}"
+    conn = sqlite3.connect("data\chat_" + f"{date_stamp}" + ".db")
+    
+    # ------------------------------------------------------------------------
+    # ein cursor-Objekt erstellen, damit wir SQL-Operationen ausführen können:
+    # ------------------------------------------------------------------------
+    conn_cursor = conn.cursor()
+    
+    # ------------------------------------------------------------------------
+    # falls noch kein Datenbestand vorliegt (zum Beispiel bei der ersten in-
+    # betriebnahme der Anwendung), erstellen wir erstmal alle nötigen Daten-
+    # Objekte (Tabellen), die später die abgefragten Daten speichern.
+    # ------------------------------------------------------------------------
+    conn_cursor.execute('''
+        CREATE TABLE IF NOT EXISTS session (
+            id    INTEGER PRIMARY KEY,
+            stamp TEXT,
+            name  TEXT
+        )
+    ''')
+    
+    # ------------------------------------------------------------------------
+    # Standard-Einträge in "session" Tabelle eintragen:
+    # ------------------------------------------------------------------------
+    conn_cursor.execute(
+        "INSERT INTO session (stamp,name) VALUES (?,?)", \
+        (f"{date_stamp}", "default"))
+    
+    # ------------------------------------------------------------------------
+    # Änderung an der Datenbank speichern.
+    # ------------------------------------------------------------------------
+    conn.commit()
+    
+    # ------------------------------------------------------------------------
+    # okay. fast fertig - Anwendung muss noch gerendert werden.
+    # ------------------------------------------------------------------------
     fenster = HauptFenster()
-    sys.exit(app.exec_())
+    result  = app.exec_()
+    
+    # ------------------------------------------------------------------------
+    # Datenbank-Speicher freigeben und Datenbank schließen.
+    # ------------------------------------------------------------------------
+    conn.close()
+    
+    # ------------------------------------------------------------------------
+    # Anwendunge mit Fehlecode/meldung von "result" (Rückgabe-Wert von GUI)
+    # schließen.
+    # ------------------------------------------------------------------------
+    sys.exit(result)
     
     # ------------------------------------------------------------------------
     # eine nette Begrüßung kann ja nicht schaden :) ...
@@ -543,7 +663,7 @@ if __name__ == "__main__":
     except RuntimeError:
         print(S1 + "kann nicht zugeordnet werden.")
     except Exception as ex:
-        print(f"Allgemeiner " + S1 + "{ex}")
+        print(f"Allgemeiner " + S1 + f"{ex}")
     finally:
         # --------------------------------------------------------------------
         # Dieser "finally"-Block wird immer ausgeführt, unabhängig von vorher-
