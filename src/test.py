@@ -181,6 +181,12 @@ class HauptFenster(QMainWindow):
     def __init__(self):
         super().__init__()
         
+        # ------------------------------------------------------------------------
+        # hier definieren wir für globale Verwendungs-Zwecke ein paar Objekte ...
+        # ------------------------------------------------------------------------
+        self.listbox_widget      = QListWidget()
+        self.listbox_widget_left = QListWidget()
+
         self.initUI()
         
     def initUI(self):
@@ -188,6 +194,8 @@ class HauptFenster(QMainWindow):
         # ein neues Menu erzeugen ...
         # ----------------------------------------
         menubar = self.menuBar()
+        menubar.setStyleSheet("font-size:11pt;font-weight:bold;")
+        
         menu_file = menubar.addMenu(_("Datei"))
         menu_edit = menubar.addMenu(_("Bearbeiten"))
         menu_help = menubar.addMenu(_("Hilfe"))
@@ -195,10 +203,36 @@ class HauptFenster(QMainWindow):
         # ----------------------------------------
         # Menü-Aktionen hinzufügen ...
         # ----------------------------------------
-        menu_file_new = QAction("New", self)
-        menu_file_new.triggered.connect(self.menu_file_new_clicked)
+        menu_file_new    = QAction("Neue Sitzung",self)
+        menu_file_open   = QAction("Öffnen",self)
+        menu_file_save   = QAction("Speichern",self)
+        menu_file_saveas = QAction("Speichern als",self)
+        menu_file_exit   = QAction("Beenden",self)
         
+        menu_font = menu_file.font()
+        menu_font.setPointSize(11);
+        
+        menu_file.setFont(menu_font)
+        menu_edit.setFont(menu_font)
+        menu_help.setFont(menu_font)
+        
+        # ----------------------------------------
+        # Menü-Aktionen-Event (mausklick)
+        # ----------------------------------------
+        menu_file_new   .triggered.connect(self.menu_file_clicked_new)
+        menu_file_open  .triggered.connect(self.menu_file_clicked_open)
+        menu_file_save  .triggered.connect(self.menu_file_clicked_save)
+        menu_file_saveas.triggered.connect(self.menu_file_clicked_saveas)
+        menu_file_exit  .triggered.connect(self.menu_file_clicked_exit)
+        
+        # ----------------------------------------
+        # Menü darstellen, und Aktion schalten:
+        # ----------------------------------------
         menu_file.addAction(menu_file_new)
+        menu_file.addAction(menu_file_open)
+        menu_file.addAction(menu_file_save)
+        menu_file.addAction(menu_file_saveas)
+        menu_file.addAction(menu_file_exit)
         
         
         # ----------------------------------------
@@ -218,7 +252,20 @@ class HauptFenster(QMainWindow):
         checkbox_header.addWidget(checkbox_header_left)
         checkbox_header.addWidget(checkbox_header_right)
         
+        button_chat_part_save   = QPushButton("Speichern")
+        button_chat_part_delete = QPushButton("Löschen markierte Einträge")
+        
+        checkbox_header.addWidget(button_chat_part_save)
+        checkbox_header.addWidget(button_chat_part_delete)
+        
         central_layout.addLayout(checkbox_header)
+        
+        # ------------------------------------------
+        # Das stateChanged-Signal mit einer Funktion
+        # verknüpfen
+        # ------------------------------------------
+        checkbox_header_left .stateChanged.connect(self.checkbox_click_header_left )
+        checkbox_header_right.stateChanged.connect(self.checkbox_click_header_right)
         
         # ----------------------------------------
         # Layout-Container vorbereiten ...
@@ -226,15 +273,40 @@ class HauptFenster(QMainWindow):
         vbox_right_container      = QVBoxLayout()
         vbox_right_container_main = QVBoxLayout()
         
-        listbox_widget = QListWidget()
         for i in range(5):
             item = QListWidgetItem(f"Element {i}")
             check_box = QCheckBox()
-            listbox_widget.addItem(item)
-            listbox_widget.setItemWidget(item, check_box)
-
-        button1 = QPushButton("Send")
+            self.listbox_widget.addItem(item)
+            self.listbox_widget.setItemWidget(item, check_box)
+        
+        # ----------------------------------------
+        # die folgenden Zeilen sind für Debug
+        # ----------------------------------------
+        text1 = "    Zeile 1\n    Zeile 2\n    Zeile 3"
+        text2 = "    Text für Item 2\n    Mit mehreren Zeilen"
+        text3 = "    Einzeiliger Text"
+        
+        check_box_1 = QCheckBox()
+        check_box_2 = QCheckBox()
+        check_box_3 = QCheckBox()
+        
+        item1 = QListWidgetItem(text1)
+        item2 = QListWidgetItem(text2)
+        item3 = QListWidgetItem(text3)
+        
+        self.listbox_widget.addItem(item1); self.listbox_widget.setItemWidget(item1,check_box_1)
+        self.listbox_widget.addItem(item2); self.listbox_widget.setItemWidget(item2,check_box_2)
+        self.listbox_widget.addItem(item3); self.listbox_widget.setItemWidget(item3,check_box_3)
+        
+        # ----------------------------------------
+        # hier geht es normal weiter ...
+        # ----------------------------------------
+        label_right      = QLabel("Chat-Eingabe:")
+        button1          = QPushButton("Senden")
         entryfield_right = QLineEdit(central_widget)
+        
+        vbox_right_1 = QVBoxLayout()
+        vbox_right_1.addWidget(label_right)
         
         hbox_right = QHBoxLayout()
         hbox_right.addWidget(button1)
@@ -242,54 +314,129 @@ class HauptFenster(QMainWindow):
         
         vbox_right_container.addLayout(vbox_right_container_main)
         
-        vbox_right_container_main.addWidget(listbox_widget)
+        vbox_right_container_main.addWidget(self.listbox_widget)
+        vbox_right_container_main.addLayout(vbox_right_1)
         vbox_right_container_main.addLayout(hbox_right)
        
         
         vbox_left = QVBoxLayout()
         
-        listbox_widget_left = QListWidget()
-        listbox_widget_left.setMaximumWidth(200)
-        listbox_widget_left.setMinimumWidth(200)
+        self.listbox_widget_left = QListWidget()
+        self.listbox_widget_left.setMaximumWidth(200)
+        self.listbox_widget_left.setMinimumWidth(200)
         
         for i in range(5):
             item = QListWidgetItem(f"Element {i}")
             check_box = QCheckBox()
-            listbox_widget_left.addItem(item)
-            listbox_widget_left.setItemWidget(item, check_box)
+            self.listbox_widget_left.addItem(item)
+            self.listbox_widget_left.setItemWidget(item, check_box)
         
         entryfield_left = QLineEdit(central_widget)
         entryfield_left.setMaximumWidth(200)
+        
+        label_left = QLabel("Chat-Verlauf / Archive:")
         
         
         # ----------------------------------------
         # Chat-Verlauf speichern, erneuern ...
         # ----------------------------------------
         hbox_left = QHBoxLayout()
-        button2   = QPushButton("Save / New")
-        button3   = QPushButton("Clear / Delete")
+        button2   = QPushButton("Speichern")
+        button3   = QPushButton("Clear / Löschen")
         
         hbox_left.addWidget(button2)
         hbox_left.addWidget(button3)
+        
+        vbox_left_2 = QVBoxLayout()
+        button4 = QPushButton("Neu")
+        
+        vbox_left_2.addWidget(button4)
        
-        vbox_left.addWidget(listbox_widget_left)
+        vbox_left.addWidget(self.listbox_widget_left)
+        vbox_left.addWidget(label_left)
         vbox_left.addWidget(entryfield_left)
         vbox_left.addLayout(hbox_left)
+        vbox_left.addLayout(vbox_left_2)
         
         hbox = QHBoxLayout()
         
         hbox.addLayout(vbox_left)
         hbox.addLayout(vbox_right_container)
         
+        # --------------------------------------------------------
+        # zum darstellen der einzelnen Layout's verwenden wir ein
+        # zentralisiertes widget (eine Art von: all-in-one
+        # container).
+        # --------------------------------------------------------
         central_layout.addLayout(hbox)
         self.setCentralWidget(central_widget)
         
-        self.setGeometry(50,50,320,200)
+        # --------------------------------------------------------
+        # - Größe des Fenster einstellen (kann je nach Preferences
+        #   in der .ini Datei abweichen - sofern diese noch nicht
+        #   vorhanden ist/sind)
+        # - Titel für die Anwendung setzen (Bitte seid so fair,
+        #   und richtet Euch nach dem CodeOfConduct. Diese COC
+        #   besagt, das Copyrightvermerke nicht einfach gelöscht
+        #   werden und aus dieser Anwendung ein Plaqiat wird und
+        #   die Ideen in diesen Code eins zu eins (1:1) in andere
+        #   Anwendungen übernommen werden - Danke !
+        # - öffnen der Anwendung (starten der GUI)
+        # --------------------------------------------------------
+        self.setGeometry(50,50,800,600)
         self.setWindowTitle("ChatGPT Toying Application (c) 2023 by paule32")
         self.show()
     
-    def menu_file_new_clicked(self):
+    # ----------------------------------------
+    # Menu Aktion-Event's ...
+    # ----------------------------------------
+    def menu_file_clicked_new(self):
         print("new clicked")
+    
+    def menu_file_clicked_open(self):
+        print("open clicked")
+    
+    def menu_file_clicked_save(self):
+        print("save clicked")
+    
+    def menu_file_clicked_saveas(self):
+        print("save as clicked")
+    
+    def menu_file_clicked_exit(self):
+        print("exit clicked")
+        sys.exit()
+    
+    # ----------------------------------------
+    # rechte checkbox: Alles auswählen
+    # state => 2 "clicked"
+    # ----------------------------------------
+    def checkbox_click_header_right(self,state):
+        if state == 2:
+            for index in range(self.listbox_widget.count()):
+                item     = self.listbox_widget.item(index)
+                checkbox = self.listbox_widget.itemWidget(item)
+                checkbox.setCheckState(2)
+        else:
+            for index in range(self.listbox_widget.count()):
+                item     = self.listbox_widget.item(index)
+                checkbox = self.listbox_widget.itemWidget(item)
+                checkbox.setCheckState(0)
+    
+    # ----------------------------------------
+    # linke checkbox: Alles auswählen
+    # state => 2 "clicked"
+    # ----------------------------------------
+    def checkbox_click_header_left(self,state):
+        if state == 2:
+            for index in range(self.listbox_widget_left.count()):
+                item     = self.listbox_widget_left.item(index)
+                checkbox = self.listbox_widget_left.itemWidget(item)
+                checkbox.setCheckState(2)
+        else:
+            for index in range(self.listbox_widget_left.count()):
+                item     = self.listbox_widget_left.item(index)
+                checkbox = self.listbox_widget_left.itemWidget(item)
+                checkbox.setCheckState(0)
 
 # ----------------------------------------------------------------------------
 # dies wird unsere "main" - Einstiegs-Funktions werden, ab der Python beginnt,
