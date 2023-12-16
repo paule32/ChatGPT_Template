@@ -108,11 +108,11 @@ try:
     import sqlite3       # database: sqlite
     import configparser  # .ini files
     
-    from PyQt5.QtWidgets import *         # Qt5 widgets
-    from PyQt5.QtGui     import QIcon     # Qt5 gui
-    from PyQt5.QtCore    import pyqtSlot  # Qt5 core
+    from PyQt5.QtWidgets import *             # Qt5 widgets
+    from PyQt5.QtGui     import QIcon         # Qt5 gui
+    from PyQt5.QtCore    import pyqtSlot, Qt  # Qt5 core
     
-    from openai import OpenAI             # ChatGPT like AI
+    from openai import OpenAI                 # ChatGPT like AI
     
     # ------------------------------------------------
     # wir wollen die bestmögliche preferences - von
@@ -260,8 +260,8 @@ class HauptFenster(QMainWindow):
         self.checkbox_header_left  = QCheckBox("Alles auswählen")
         self.checkbox_header_right = QCheckBox("Alles auswählen")
         
-        self.checkbox_header_left.setMaximumWidth(200)
-        self.checkbox_header_left.setMinimumWidth(200)
+        self.checkbox_header_left.setMaximumWidth(260)
+        self.checkbox_header_left.setMinimumWidth(260)
         
         checkbox_header.addWidget(self.checkbox_header_left)
         checkbox_header.addWidget(self.checkbox_header_right)
@@ -286,31 +286,43 @@ class HauptFenster(QMainWindow):
         # ----------------------------------------
         vbox_right_container      = QVBoxLayout()
         vbox_right_container_main = QVBoxLayout()
+
+        text1 = "Zeile 1\nZeile 2\nZeile 3"
+        text2 = "Text für Item 2\nMit mehreren Zeilen"
+        text3 = "Einzeiliger Text"
         
-        for i in range(5):
-            item = QListWidgetItem(f"Element {i}")
+        text_label_array = [text1,text2,text3]
+        
+        for element in text_label_array:
+            item = QListWidgetItem()
+            
+            # -----------------------------------------
+            # ein benutzerdefiniertes Widget erstellen
+            # -----------------------------------------
+            custom_widget = QWidget()
+            
             check_box = QCheckBox()
+            check_box.setChecked(False)
+            check_box.setMaximumWidth(15)
+            
+            push_button = QPushButton("DEL")
+            push_button.setMaximumWidth(50)
+            push_button.clicked.connect(self.push_button_clicked_itemright)
+            
+            custom_layout_0 = QVBoxLayout(custom_widget)
+            custom_layout_1 = QHBoxLayout()
+            
+            label_custom = QLabel(element)
+            
+            custom_layout_1.addWidget(check_box)
+            custom_layout_1.addWidget(label_custom)
+            custom_layout_1.addWidget(push_button)
+            
+            custom_layout_0.addLayout(custom_layout_1)
+            item.setSizeHint(custom_widget.sizeHint())
+            
             self.listbox_widget.addItem(item)
-            self.listbox_widget.setItemWidget(item, check_box)
-        
-        # ----------------------------------------
-        # die folgenden Zeilen sind für Debug
-        # ----------------------------------------
-        text1 = "    Zeile 1\n    Zeile 2\n    Zeile 3"
-        text2 = "    Text für Item 2\n    Mit mehreren Zeilen"
-        text3 = "    Einzeiliger Text"
-        
-        check_box_1 = QCheckBox()
-        check_box_2 = QCheckBox()
-        check_box_3 = QCheckBox()
-        
-        item1 = QListWidgetItem(text1)
-        item2 = QListWidgetItem(text2)
-        item3 = QListWidgetItem(text3)
-        
-        self.listbox_widget.addItem(item1); self.listbox_widget.setItemWidget(item1,check_box_1)
-        self.listbox_widget.addItem(item2); self.listbox_widget.setItemWidget(item2,check_box_2)
-        self.listbox_widget.addItem(item3); self.listbox_widget.setItemWidget(item3,check_box_3)
+            self.listbox_widget.setItemWidget(item,custom_widget)
         
         # ----------------------------------------
         # hier geht es normal weiter ...
@@ -336,8 +348,8 @@ class HauptFenster(QMainWindow):
         vbox_left = QVBoxLayout()
         
         self.listbox_widget_left = QListWidget()
-        self.listbox_widget_left.setMaximumWidth(200)
-        self.listbox_widget_left.setMinimumWidth(200)
+        self.listbox_widget_left.setMaximumWidth(260)
+        self.listbox_widget_left.setMinimumWidth(260)
         
         for i in range(5):
             item = QListWidgetItem()
@@ -353,9 +365,20 @@ class HauptFenster(QMainWindow):
             
             push_button = QPushButton("DEL")
             push_button.setMaximumWidth(50)
+            push_button.clicked.connect(self.push_button_clicked_itemleft)
             
-            date_label  = QLabel("Datum")
+            # -----------------------------------------
+            # wenn kein item ausgewählt ist, dann den
+            # button ermitteln ...
+            # -----------------------------------------
+            item.setData(Qt.UserRole,push_button)
+            
+            date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+            time_str = datetime.datetime.now().strftime("%H:%M:%S")
+            
+            date_label  = QLabel(f"{date_str}" + "  " + f"{time_str}")
             name_label  = QLabel("Name der Session")
+            name_label.setStyleSheet("font-weight:bold;")
             
             custom_layout_0 = QVBoxLayout(custom_widget)
             custom_layout_1 = QHBoxLayout()
@@ -373,11 +396,16 @@ class HauptFenster(QMainWindow):
             item.setSizeHint(custom_widget.sizeHint())
             
             self.listbox_widget_left.addItem(item)
-            self.listbox_widget_left.setItemWidget(item, custom_widget)
+            self.listbox_widget_left.setItemWidget(item,custom_widget)
+            
+            # -----------------------------------------
+            # Signal-Slot-Verbindung für den Button:
+            # -----------------------------------------
+            self.listbox_widget.itemClicked.connect(self.push_button_clicked)
         
         
         entryfield_left = QLineEdit(central_widget)
-        entryfield_left.setMaximumWidth(200)
+        entryfield_left.setMaximumWidth(260)
         
         label_left = QLabel("Chat-Verlauf / Archive:")
         
@@ -431,6 +459,26 @@ class HauptFenster(QMainWindow):
         self.setGeometry(50,50,800,600)
         self.setWindowTitle("ChatGPT Toying Application (c) 2023 by paule32")
         self.show()
+    
+    # ----------------------------------------
+    # item aus der linken ListBox entfernen
+    # ----------------------------------------
+    def push_button_clicked_itemleft(self):
+        selected_item = self.listbox_widget_left.currentItem()
+        if selected_item is not None:
+            row = self.listbox_widget_left.row(selected_item)
+            self.listbox_widget_left.takeItem(row)
+    
+    def push_button_clicked(self,item):
+        button = item.data(Qt.UserRole)
+        if button is not None:
+            self.push_button_clicked_itemleft(button)
+    
+    # ----------------------------------------
+    # item aus der rechten ListBox entfernen
+    # ----------------------------------------
+    def push_button_clicked_itemright(self):
+        print("links")
     
     # ----------------------------------------
     # Menu Aktion-Event's ...
