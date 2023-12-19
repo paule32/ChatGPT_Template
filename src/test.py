@@ -203,10 +203,25 @@ class HauptFenster(QMainWindow):
         
     def initUI(self):
         # ----------------------------------------
+        # Farbe für die Menü-Einträge ...
+        # ----------------------------------------
+        menu_item_style = """
+        QMenuBar {
+            background-color:navy;
+            color:yellow;
+            font-size:11pt;
+            font-weight:bold;
+        }
+        QMenuBar:item:selected {
+            background-color: #3366CC;
+            color: white;
+        }
+        """
+        # ----------------------------------------
         # ein neues Menu erzeugen ...
         # ----------------------------------------
         menubar = self.menuBar()
-        menubar.setStyleSheet("font-size:11pt;font-weight:bold;background-color:navy;color:yellow;")
+        menubar.setStyleSheet(menu_item_style)
         
         menu_file = menubar.addMenu(_("Datei"))
         menu_edit = menubar.addMenu(_("Bearbeiten"))
@@ -215,13 +230,14 @@ class HauptFenster(QMainWindow):
         # ----------------------------------------
         # Menü-Aktionen hinzufügen ...
         # ----------------------------------------
-        menu_file_new    = QAction("Neue Sitzung",self)
+        menu_file_new    = QWidgetAction(menu_file)
         menu_file.addSeparator()
-        menu_file_open   = QAction("Öffnen",self)
-        menu_file_save   = QAction("Speichern",self)
-        menu_file_saveas = QAction("Speichern als",self)
+        menu_file_open   = QWidgetAction(menu_file)
+        menu_file_save   = QWidgetAction(menu_file)
+        menu_file_saveas = QWidgetAction(menu_file)
         menu_file.addSeparator()
-        menu_file_exit   = QAction("Beenden",self)
+        menu_file_exit   = QWidgetAction(menu_file)
+        menu_file.setStyleSheet("background-color:blue;;padding:1px;margin:0px;")
         
         menu_font = menu_file.font()
         menu_font.setPointSize(11)
@@ -229,6 +245,74 @@ class HauptFenster(QMainWindow):
         menu_file.setFont(menu_font)
         menu_edit.setFont(menu_font)
         menu_help.setFont(menu_font)
+        
+        ltxt  = "QLabel{background-color:navy;color:yellow;font-weight:bold;font-size:11pt;padding:4px;margin:0px;}"
+        ltxt += "QLabel:hover{background-color:green;color:yellow;}"
+        
+        l_1 = QLabel("Neue Session"); l_1.setStyleSheet(ltxt);
+        l_2 = QLabel("Öffnen");       l_2.setStyleSheet(ltxt);
+        l_3 = QLabel("Speichern");    l_3.setStyleSheet(ltxt);
+        l_4 = QLabel("Speicher als"); l_4.setStyleSheet(ltxt);
+        l_5 = QLabel("Beenden");      l_5.setStyleSheet(ltxt);
+        
+        icon_1_1 = QWidget()
+        icon_1_1.setFixedWidth(26)
+        icon_1_1.setContentsMargins(0,0,0,0)
+        w_1_1 = QWidget()
+        l_1_1 = QHBoxLayout(w_1_1)
+        l_1_1.setContentsMargins(0,0,0,0)
+        l_1_1.addWidget(icon_1_1)
+        l_1_1.addWidget(l_1)
+        w_1_1.setLayout(l_1_1)
+        
+        icon_1_2 = QWidget()
+        icon_1_2.setFixedWidth(26)
+        icon_1_2.setContentsMargins(0,0,0,0)
+        w_1_2 = QWidget()
+        l_1_2 = QHBoxLayout(w_1_2)
+        l_1_2.setContentsMargins(0,0,0,0)
+        l_1_2.addWidget(icon_1_2)
+        l_1_2.addWidget(l_2)
+        w_1_2.setLayout(l_1_2)
+        
+        icon_1_3 = QWidget()
+        icon_1_3.setFixedWidth(26)
+        icon_1_3.setContentsMargins(0,0,0,0)
+        w_1_3 = QWidget()
+        l_1_3 = QHBoxLayout(w_1_3)
+        l_1_3.setContentsMargins(0,0,0,0)
+        l_1_3.addWidget(icon_1_3)
+        l_1_3.addWidget(l_3)
+        w_1_3.setLayout(l_1_3)
+        
+        icon_1_4 = QWidget()
+        icon_1_4.setFixedWidth(26)
+        icon_1_4.setContentsMargins(0,0,0,0)
+        w_1_4 = QWidget()
+        l_1_4 = QHBoxLayout(w_1_4)
+        l_1_4.setContentsMargins(0,0,0,0)
+        l_1_4.addWidget(icon_1_4)
+        l_1_4.addWidget(l_4)
+        w_1_4.setLayout(l_1_4)
+        
+        icon_1_5 = QWidget()
+        icon_1_5.setContentsMargins(0,0,0,0)
+        icon_1_5.setFixedWidth(26)
+        icon_1_5.setStyleSheet("background-color:blue;")
+        w_1_5 = QWidget()
+        l_1_5 = QHBoxLayout(w_1_5)
+        l_1_5.setContentsMargins(0,0,0,0)
+        w_1_5.setContentsMargins(0,0,0,0)
+        l_1_5.addWidget(icon_1_5)
+        l_1_5.addWidget(l_5)
+        w_1_5.setLayout(l_1_5)
+        
+        menu_file_new   .setDefaultWidget(w_1_1)
+        menu_file_open  .setDefaultWidget(w_1_2)
+        menu_file_save  .setDefaultWidget(w_1_3)
+        menu_file_saveas.setDefaultWidget(w_1_4)
+        menu_file_exit  .setDefaultWidget(w_1_5)
+        
         
         # ----------------------------------------
         # Menü-Aktionen-Event (mausklick)
