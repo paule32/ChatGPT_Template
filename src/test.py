@@ -107,9 +107,10 @@ try:
     import locale        # internal system locale
     import sqlite3       # database: sqlite
     import configparser  # .ini files
+    import traceback     # stack exception trace back
     
     from PyQt5.QtWidgets import *             # Qt5 widgets
-    from PyQt5.QtGui     import QIcon         # Qt5 gui
+    from PyQt5.QtGui     import QIcon, QFont  # Qt5 gui
     from PyQt5.QtCore    import pyqtSlot, Qt  # Qt5 core
     
     from openai import OpenAI                 # ChatGPT like AI
@@ -151,23 +152,22 @@ try:
     loca.install()
     _  = loca.gettext
     
-    S1 = _("Fehler: ")
-    S2 = _("Programm abgebrochen.\nGrund: ")
-    
+    S1 = "Fehler: "
+
 except ImportError as ex:
-    TS0 = S2 + _("import fehlgeschalgen: ") + f"{ex}"
+    TS0 = _("Fehler: import fehlgeschalgen: ") + f"{ex}"
     sys.exit(TS0)
 except AttributeError as ex:
-    TS0 = S1 + S2 + _("Attribut oder Methode für Objekt nicht vorhanden: ") + f"{ex}"
+    TS0 = _("Fehler: Attribut oder Methode für Objekt nicht vorhanden: ") + f"{ex}"
     sys.exit(TS0)
 except KeyError as ex:
-    TS0 = S1 + S2 + _("Dictionary-Schlüsselelement nicht vorhanden.") + f"{ex}"
+    TS0 = _("Fehler: Dictionary-Schlüsselelement nicht vorhanden.") + f"{ex}"
     sys.exit(TS0)
 except FileNotFoundError as ex:
-    TS0 = "Datei wurde nicht gefunden: " + f"{ex}"
+    TS0 = _("Fehler: Datei wurde nicht gefunden: ") + f"{ex}"
     sys.exit(TS0)
 except Exception as ex:
-    TS0 = "Fehler: " + f"{ex}"
+    TS0 = _("Fehler: ") + f"{ex}"
     sys.exit(TS0)
 
 # ----------------------------------------------------------------------------
@@ -206,7 +206,7 @@ class HauptFenster(QMainWindow):
         # ein neues Menu erzeugen ...
         # ----------------------------------------
         menubar = self.menuBar()
-        menubar.setStyleSheet("font-size:11pt;font-weight:bold;")
+        menubar.setStyleSheet("font-size:11pt;font-weight:bold;background-color:navy;color:yellow;")
         
         menu_file = menubar.addMenu(_("Datei"))
         menu_edit = menubar.addMenu(_("Bearbeiten"))
@@ -224,7 +224,7 @@ class HauptFenster(QMainWindow):
         menu_file_exit   = QAction("Beenden",self)
         
         menu_font = menu_file.font()
-        menu_font.setPointSize(11);
+        menu_font.setPointSize(11)
         
         menu_file.setFont(menu_font)
         menu_edit.setFont(menu_font)
@@ -248,13 +248,45 @@ class HauptFenster(QMainWindow):
         menu_file.addAction(menu_file_saveas)
         menu_file.addAction(menu_file_exit)
         
+        # ----------------------------------------
+        # eine ToolBar unter dem Menubalken:
+        # ----------------------------------------
+        toolbar = self.addToolBar("Haupt-Toolbar")
+        toolbar.setStyleSheet("background-color:gray;")
+        
+        action1 = QAction(QIcon("image/open_36.png"),"Aktion 1", self)
+        action2 = QAction(QIcon("image/open_36.png"),"Aktion 2", self)
+        
+        action1.triggered.connect(self.handle_action1)
+        action2.triggered.connect(self.handle_action2)
+        
+        toolbar.addAction(action1)
+        toolbar.addAction(action2)
+        
+        self.status_label = QLabel()
+        self.statusBar().addWidget(self.status_label)
         
         # ----------------------------------------
-        # das zentrale Widget ...
+        # eine Status-Zeile am Fuß des Formulars:
         # ----------------------------------------
+        status_bar = self.statusBar()
+        status_bar.setStyleSheet("background-color:gray;color:white;font-size:9pt;")
+        status_bar.showMessage("Willkommen")
+        
+        # ----------------------------------------
+        # Font für das zentrale Widget ...
+        # ----------------------------------------
+        central_font = QFont()
+        central_font.setFamily("Arial")  # Schriftfamilie: Arial
+        central_font.setPointSize(10)    # Schriftgröße  : 10pt
+        central_font.setBold(False)
+        central_font.setItalic(False)
+        
         central_widget = QWidget(self)
+        central_widget.setFont(central_font)
         
         central_layout = QVBoxLayout(central_widget)
+        
         
         checkbox_header = QHBoxLayout()
         self.checkbox_header_left  = QCheckBox("Alles auswählen")
@@ -287,6 +319,9 @@ class HauptFenster(QMainWindow):
         vbox_right_container      = QVBoxLayout()
         vbox_right_container_main = QVBoxLayout()
 
+        # ----------------------------------------
+        # Debug
+        # ----------------------------------------
         text1 = "Zeile 1\nZeile 2\nZeile 3"
         text2 = "Text für Item 2\nMit mehreren Zeilen"
         text3 = "Einzeiliger Text"
@@ -294,57 +329,131 @@ class HauptFenster(QMainWindow):
         text_label_array = [text1,text2,text3]
         
         for element in text_label_array:
-            item = QListWidgetItem()
-            
-            # -----------------------------------------
-            # ein benutzerdefiniertes Widget erstellen
-            # -----------------------------------------
-            custom_widget = QWidget()
-            
-            check_box = QCheckBox()
-            check_box.setChecked(False)
-            check_box.setMaximumWidth(15)
-            
-            push_button = QPushButton("DEL")
-            push_button.setMaximumWidth(50)
-            push_button.clicked.connect(self.push_button_clicked_itemright)
-            
-            custom_layout_0 = QVBoxLayout(custom_widget)
-            custom_layout_1 = QHBoxLayout()
-            
-            label_custom = QLabel(element)
-            
-            custom_layout_1.addWidget(check_box)
-            custom_layout_1.addWidget(label_custom)
-            custom_layout_1.addWidget(push_button)
-            
-            custom_layout_0.addLayout(custom_layout_1)
-            item.setSizeHint(custom_widget.sizeHint())
-            
-            self.listbox_widget.addItem(item)
-            self.listbox_widget.setItemWidget(item,custom_widget)
+            self.add_chat_item(element,"Du")
         
         # ----------------------------------------
         # hier geht es normal weiter ...
         # ----------------------------------------
-        label_right      = QLabel("Chat-Eingabe:")
-        button1          = QPushButton("Senden")
-        entryfield_right = QLineEdit(central_widget)
+        send_layout_0 = QHBoxLayout()
+        send_layout_0.setAlignment(Qt.AlignLeft)
         
+        # ----------------------------------------
+        # fine-tunig Komponenten:
+        # ----------------------------------------
+        send_layout_1 = QVBoxLayout()
+        send_layout_1.setAlignment(Qt.AlignLeft)
+        
+        send_layout_1_label = QLabel("Temperatur:")
+        send_layout_1_spin1 = QSpinBox()
+        
+        send_layout_1_label.setMaximumWidth(100)
+        send_layout_1_label.setMinimumWidth(100)
+        
+        send_layout_1_spin1.setMaximumWidth(80)
+        send_layout_1_spin1.setMinimumWidth(80)
+        
+        send_layout_1.addWidget(send_layout_1_label)
+        send_layout_1.addWidget(send_layout_1_spin1)
+        # ----------------------------------------
+        send_layout_2 = QVBoxLayout()
+        send_layout_2.setAlignment(Qt.AlignLeft)
+        
+        send_layout_2_label = QLabel("Top-D:")
+        send_layout_2_spin2 = QSpinBox()
+        
+        send_layout_2_label.setMaximumWidth(100)
+        send_layout_2_label.setMinimumWidth(100)
+        
+        send_layout_2_spin2.setMaximumWidth(80)
+        send_layout_2_spin2.setMinimumWidth(80)
+        
+        send_layout_2.addWidget(send_layout_2_label)
+        send_layout_2.addWidget(send_layout_2_spin2)
+        # ----------------------------------------
+        send_layout_3 = QVBoxLayout()
+        send_layout_3.setAlignment(Qt.AlignLeft)
+        
+        send_layout_3_label = QLabel("Max-Token:")
+        send_layout_3_spin3 = QSpinBox()
+        
+        send_layout_3_label.setMaximumWidth(100)
+        send_layout_3_label.setMinimumWidth(100)
+        
+        send_layout_3_spin3.setMaximumWidth(80)
+        send_layout_3_spin3.setMinimumWidth(80)
+        
+        send_layout_3_spin3.setMaximum(500)
+        send_layout_3_spin3.setMinimum(1)
+        send_layout_3_spin3.setValue  (100)
+        
+        send_layout_3.addWidget(send_layout_3_label)
+        send_layout_3.addWidget(send_layout_3_spin3)
+        # ----------------------------------------
+        
+        send_layout_0.addLayout(send_layout_1)
+        send_layout_0.addLayout(send_layout_2)
+        send_layout_0.addLayout(send_layout_3)
+        
+        # ----------------------------------------
+        # chat-Eingabe Komponenten ...
+        # ----------------------------------------
+        button1 = QPushButton("Senden")
+        button1.clicked.connect(self.send_to_chat_clicked)
+        
+        self.entryfield_right = QTextEdit(central_widget)
+        self.entryfield_right.setMaximumHeight(100)
+        
+        # ----------------------------------------
+        # Bearbeitung (Button's) ...
+        # ----------------------------------------
         vbox_right_1 = QVBoxLayout()
-        vbox_right_1.addWidget(label_right)
         
-        hbox_right = QHBoxLayout()
-        hbox_right.addWidget(button1)
-        hbox_right.addWidget(entryfield_right)
+        vbox_right_1_button_1 = QPushButton("Laden aus Datei")
+        vbox_right_1_button_2 = QPushButton("Speichern in Datei")
+        vbox_right_1_button_3 = QPushButton("Text Löschen")
+        
+        vbox_right_1_widget_1 = QWidget()
+        vbox_right_1_widget_1.setFixedHeight(10)
+        
+        vbox_right_1_button_4 = QPushButton("Text Einfügen")
+        vbox_right_1_button_5 = QPushButton("Text Kopieren")
+        
+        vbox_right_1.addWidget(vbox_right_1_button_1)
+        vbox_right_1.addWidget(vbox_right_1_button_2)
+        vbox_right_1.addWidget(vbox_right_1_button_3)
+        
+        vbox_right_1.addWidget(vbox_right_1_widget_1)
+        vbox_right_1.addWidget(vbox_right_1_button_4)
+        vbox_right_1.addWidget(vbox_right_1_button_5)
+        
+        vbox_right_1_button_1.clicked.connect(self.send_edit_button_1)
+        vbox_right_1_button_2.clicked.connect(self.send_edit_button_2)
+        vbox_right_1_button_3.clicked.connect(self.send_edit_button_3)
+        vbox_right_1_button_4.clicked.connect(self.send_edit_button_4)
+        vbox_right_1_button_5.clicked.connect(self.send_edit_button_5)
         
         vbox_right_container.addLayout(vbox_right_container_main)
-        
         vbox_right_container_main.addWidget(self.listbox_widget)
-        vbox_right_container_main.addLayout(vbox_right_1)
-        vbox_right_container_main.addLayout(hbox_right)
-       
         
+        hbox_right = QHBoxLayout()
+        hbox_right.addLayout(send_layout_0)
+        
+        vbox_2 = QVBoxLayout()
+        vbox_2.addLayout(hbox_right)
+        
+        hbox_2 = QHBoxLayout()
+        hbox_2.addWidget(button1, alignment=Qt.AlignTop)
+        hbox_2.addWidget(self.entryfield_right, alignment=Qt.AlignTop)
+        hbox_2.addLayout(vbox_right_1)
+        
+        vbox_2.addLayout(hbox_2)
+        
+        vbox_right_container_main.addLayout(vbox_2)
+        vbox_right_container_main.setAlignment(Qt.AlignTop)
+        
+        # ----------------------------------------
+        # Benutzer-Elemente für die linke-Seite:
+        # ----------------------------------------
         vbox_left = QVBoxLayout()
         
         self.listbox_widget_left = QListWidget()
@@ -481,6 +590,84 @@ class HauptFenster(QMainWindow):
         print("links")
     
     # ----------------------------------------
+    # Text an OpenAI und Chat-Fenster senden:
+    # ----------------------------------------
+    def send_to_chat_clicked(self):
+        user_text = self.entryfield_right.toPlainText()
+        self.entryfield_right.setText("")
+        self.add_chat_item(f"{user_text}","Du")
+    
+    # -----------------------------------------
+    # ein benutzerdefiniertes Widget erstellen
+    # - zuerst prüfen, ob Text vorhandne ist:
+    # -----------------------------------------
+    def add_chat_item(self,text,mode):
+        if not text.strip():
+            self.entryfield_right.setText("")
+            self.entryfield_right.setFocus()
+            return
+        
+        item = QListWidgetItem()
+        
+        custom_widget = QWidget()
+        
+        check_box = QCheckBox()
+        check_box.setChecked(False)
+        check_box.setMaximumWidth(15)
+        
+        push_button = QPushButton("DEL")
+        push_button.setMaximumWidth(50)
+        push_button.clicked.connect(self.push_button_clicked_itemright)
+        
+        custom_layout_0 = QVBoxLayout(custom_widget)
+        custom_layout_3 = QVBoxLayout()
+        custom_layout_1 = QHBoxLayout()
+        custom_layout_2 = QVBoxLayout()
+        
+        # ----------------------------------------
+        # header (Datum)
+        # ----------------------------------------
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        time_str = datetime.datetime.now().strftime("%H:%M:%S")
+        
+        custom_label = QLabel()
+        custom_date  = f"{date_str}&nbsp;&nbsp;&nbsp;<span style='font-style:italic;'>{time_str}</span>"
+        custom_text  = "" \
+            + "<span style='font-weight:bold;'>" + f"{mode}&nbsp;&nbsp;&nbsp;" + "</span>" \
+            + "<span style='color:green;'>"      + f"{custom_date}" + "</span>"
+            
+        custom_label.setText(f"{custom_text}")
+        custom_layout_3.addWidget(custom_label)
+        
+        # ----------------------------------------
+        # Das Layout-Stretch hinzufügen, um die
+        # QCheckBox nach oben zu drücken
+        # ----------------------------------------
+        custom_layout_2.addWidget(check_box)
+        custom_layout_2.addStretch(0)
+        
+        label_custom = QLabel(text)
+        
+        custom_layout_1.addLayout(custom_layout_2)
+        custom_layout_1.addWidget(label_custom,alignment=Qt.AlignTop)
+        custom_layout_1.addWidget(push_button ,alignment=Qt.AlignTop)
+        
+        custom_layout_0.addLayout(custom_layout_3)
+        custom_layout_0.addLayout(custom_layout_1)
+        item.setSizeHint(custom_widget.sizeHint())
+        
+        self.listbox_widget.addItem(item)
+        self.listbox_widget.setItemWidget(item,custom_widget)
+    
+    # ----------------------------------------
+    # Die Methode showEvent wird aufgerufen,
+    # wenn das Widget angezeigt wird - Hier
+    # setzen wir den Fokus auf die QLineEdit
+    # ----------------------------------------
+    def showEvent(self,event):
+        self.entryfield_right.setFocus()
+    
+    # ----------------------------------------
     # Menu Aktion-Event's ...
     # ----------------------------------------
     def menu_file_clicked_new(self):
@@ -502,6 +689,24 @@ class HauptFenster(QMainWindow):
     def menu_file_clicked_exit(self):
         print("exit clicked")
         sys.exit()
+    
+    # ----------------------------------------
+    # Text-Eingabe/Chat Elemente ...
+    # ----------------------------------------
+    def send_edit_button_1(self):
+        print("load from")
+    
+    def send_edit_button_2(self):
+        print("save to")
+    
+    def send_edit_button_3(self):
+        print("delete text")
+    
+    def send_edit_button_4(self):
+        print("insert text")
+    
+    def send_edit_button_5(self):
+        print("copy text")
     
     # ----------------------------------------
     # rechte checkbox: Alles auswählen
@@ -534,6 +739,12 @@ class HauptFenster(QMainWindow):
                 item     = self.listbox_widget_left.item(index)
                 checkbox = self.listbox_widget_left.itemWidget(item)
                 checkbox.setChecked(False)
+    
+    def handle_action1(self):
+        self.status_label.setText("Aktion 1 ausgelöst!")
+    
+    def handle_action2(self):
+        self.status_label.setText("Aktion 2 ausgelöst!")
 
 # ----------------------------------------------------------------------------
 # dies wird unsere "main" - Einstiegs-Funktions werden, ab der Python beginnt,
@@ -685,32 +896,76 @@ if __name__ == "__main__":
         #    api_key=os.environ['OPENAI_API_KEY'],
         #)
         window()
-        Anfrage_1()
+        #Anfrage_1()
+    # --------------------------------------------------------------------
+    # traceback.extract_tb gibt eine Liste von "stack trace" Einträgen
+    # zurück. Der letzte Eintrag ([-1]) enthält die Informationen über die
+    # aktuelle Codezeile.
+    # --------------------------------------------------------------------
     except SyntaxError:
-        print(S1 + "Fehler in der Syntax des Codes.")
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
+        print(S1 + "in der Syntax des Codes.")
     except IndentationError:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "Einrückung im Code ist nicht korrekt.")
     except NameError as ex:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "Name nicht gefunden: Variable oder Funktion nicht definiert: " + f"{ex}")
     except ImportError as ex:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "Import fehlgeschalgen: " + f"{ex}")
     except TypeError as ex:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "Operation auf Datentyp nicht zulässig: " + f"{ex}")
     except ValueError:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "Funktion hat gültigen Wert, wird aber falsch aufgerufen.")
     except ZeroDivisionError:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "Division durch Null ist nicht erlaubt.")
     except FileNotFoundError:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "Datei oder Verzeichnis existiert nicht.")
     except IndexError:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "Index für Element liegt ausserhalb des gültigen Bereiches")
     except KeyError as ex:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "Dictionary-Schlüsselelement nicht vorhanden." + f"{ex}")
     except AttributeError as ex:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "Attribut oder Methode für Objekt nicht vorhanden: " + f"{ex}")
     except RuntimeError:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(S1 + "kann nicht zugeordnet werden.")
     except Exception as ex:
+        _, _, tb = sys.exc_info()
+        letzter_stack_trace = traceback.extract_tb(tb)[-1]
+        print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
         print(f"Allgemeiner " + S1 + f"{ex}")
     finally:
         # --------------------------------------------------------------------
