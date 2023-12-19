@@ -14,17 +14,60 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: pygettext.py 1.5\n"
 
-msgid "Datei"
-msgstr ""
+# TRY CATCH import state
+msgid "\05\02\02\01"
+msgstr "Fehler: import fehlgeschalgen: "
+msgid "\05\02\02\02"
+msgstr "Fehler: Attribut oder Methode für Objekt nicht vorhanden: "
+msgid "\05\02\02\03"
+msgstr "Fehler: Dictionary-Schlüsselelement nicht vorhanden."
+msgid "\05\02\02\04"
+msgstr "Fehler: Datei wurde nicht gefunden: "
+msgid "\05\02\02\05"
+msgstr "Fehler: "
+#
+msgid "\05\02\02\06"
+msgstr "in der Syntax des Codes."
+msgid "\05\02\02\07"
+msgstr "Einrückung im Code ist nicht korrekt."
+msgid "\05\02\02\08"
+msgstr "Name nicht gefunden: Variable oder Funktion nicht definiert: "
+msgid "\05\02\02\09"
+msgstr "Import fehlgeschalgen: "
+msgid "\05\02\02\0a"
+msgstr "Operation auf Datentyp nicht zulässig: "
+msgid "\05\02\02\0b"
+msgstr "Funktion hat gültigen Wert, wird aber falsch aufgerufen."
+msgid "\05\02\02\0c"
+msgstr "Division durch Null ist nicht erlaubt."
+msgid "\05\02\02\0d"
+msgstr "Datei oder Verzeichnis existiert nicht."
+msgid "\05\02\02\0e"
+msgstr "Index für Element liegt ausserhalb des gültigen Bereiches"
+msgid "\05\02\02\0f"
+msgstr "Dictionary-Schlüsselelement nicht vorhanden."
+msgid "\05\02\02\10"
+msgstr "Attribut oder Methode für Objekt nicht vorhanden: "
+msgid "\05\02\02\11"
+msgstr "kann nicht zugeordnet werden."
 
-msgid "Bearbeiten"
-msgstr ""
+# Hauptmenu
+msgid "\05\02\01\01"
+msgstr "Datei"
 
-msgid "Hilfe"
-msgstr ""
+msgid "\05\02\01\02"
+msgstr "Bearbeiten"
 
-msgid "Alles auswählen"
-msgstr ""
+msgid "\05\02\01\03"
+msgstr "Hilfe"
+
+# checker header
+msgid "\06\01\01"
+msgstr "Alles auswählen"
+msgid "\06\01\03"
+msgstr "Speichern"
+msgid "\06\01\04"
+msgstr "Lösche markierte Einträge"
 
 msgid "Fehler: "
 msgstr ""
@@ -37,3 +80,32 @@ msgstr "import error: "
 
 msgid "Attribut oder Methode für Objekt nicht vorhanden: "
 msgstr "attribute or methode for object not found: "
+
+# menu_file.setStyleSheet
+msgid "\05\01\01"
+msgstr "background-color:blue;padding:1px;margin:0px;"
+
+msgid "\01\01"
+msgstr "color:white;font-weight:normal;font-style:italic"
+
+# ltxt
+msgid "\05\01\02"
+msgstr "QLabel{background-color:navy;color:yellow;font-weight:bold;font-size:11pt;padding:4px;margin:0px;}"
+msgid "\05\01\03"
+msgstr "QLabel:hover{background-color:green;color:yellow;}"
+
+# l_1..5 QLabel
+msgid "\05\02\01"
+msgstr "Neue Session"
+msgid "\05\02\02"
+msgstr "Öffnen"
+msgid "\05\02\03"
+msgstr "Speichern"
+msgid "\05\02\04"
+msgstr "Speicher als"
+msgid "\05\02\05"
+msgstr "Beenden"
+
+# menü file: icon widget
+msgid "\05\01\04"
+msgstr "background-color:blue;"

@@ -155,19 +155,19 @@ try:
     S1 = "Fehler: "
 
 except ImportError as ex:
-    TS0 = _("Fehler: import fehlgeschalgen: ") + f"{ex}"
+    TS0 = _("\05\02\02\01") + f"{ex}"
     sys.exit(TS0)
 except AttributeError as ex:
-    TS0 = _("Fehler: Attribut oder Methode für Objekt nicht vorhanden: ") + f"{ex}"
+    TS0 = _("\05\02\02\02") + f"{ex}"
     sys.exit(TS0)
 except KeyError as ex:
-    TS0 = _("Fehler: Dictionary-Schlüsselelement nicht vorhanden.") + f"{ex}"
+    TS0 = _("\05\02\02\03") + f"{ex}"
     sys.exit(TS0)
 except FileNotFoundError as ex:
-    TS0 = _("Fehler: Datei wurde nicht gefunden: ") + f"{ex}"
+    TS0 = _("\05\02\02\04") + f"{ex}"
     sys.exit(TS0)
 except Exception as ex:
-    TS0 = _("Fehler: ") + f"{ex}"
+    TS0 = _("\05\02\02\05") + f"{ex}"
     sys.exit(TS0)
 
 # ----------------------------------------------------------------------------
@@ -198,7 +198,7 @@ class HauptFenster(QMainWindow):
         # ------------------------------------------------------------------------
         self.listbox_widget      = QListWidget()
         self.listbox_widget_left = QListWidget()
-
+        
         self.initUI()
         
     def initUI(self):
@@ -223,9 +223,9 @@ class HauptFenster(QMainWindow):
         menubar = self.menuBar()
         menubar.setStyleSheet(menu_item_style)
         
-        menu_file = menubar.addMenu(_("Datei"))
-        menu_edit = menubar.addMenu(_("Bearbeiten"))
-        menu_help = menubar.addMenu(_("Hilfe"))
+        menu_file = menubar.addMenu(_("\05\02\01\01"))
+        menu_edit = menubar.addMenu(_("\05\02\01\02"))
+        menu_help = menubar.addMenu(_("\05\02\01\03"))
         
         # ----------------------------------------
         # Menü-Aktionen hinzufügen ...
@@ -237,7 +237,7 @@ class HauptFenster(QMainWindow):
         menu_file_saveas = QWidgetAction(menu_file)
         menu_file.addSeparator()
         menu_file_exit   = QWidgetAction(menu_file)
-        menu_file.setStyleSheet("background-color:blue;;padding:1px;margin:0px;")
+        menu_file.setStyleSheet(_("\05\01\01"))
         
         menu_font = menu_file.font()
         menu_font.setPointSize(11)
@@ -246,15 +246,19 @@ class HauptFenster(QMainWindow):
         menu_edit.setFont(menu_font)
         menu_help.setFont(menu_font)
         
-        ltxt  = "QLabel{background-color:navy;color:yellow;font-weight:bold;font-size:11pt;padding:4px;margin:0px;}"
-        ltxt += "QLabel:hover{background-color:green;color:yellow;}"
+        ltxt  = _("\05\01\02")
+        ltxt += _("\05\01\03")
         
-        l_1 = QLabel("Neue Session"); l_1.setStyleSheet(ltxt);
-        l_2 = QLabel("Öffnen");       l_2.setStyleSheet(ltxt);
-        l_3 = QLabel("Speichern");    l_3.setStyleSheet(ltxt);
-        l_4 = QLabel("Speicher als"); l_4.setStyleSheet(ltxt);
-        l_5 = QLabel("Beenden");      l_5.setStyleSheet(ltxt);
+        l_1 = QLabel(_("\05\02\01")); l_1.setStyleSheet(ltxt); l_1.setMinimumWidth(160)
+        l_2 = QLabel(_("\05\02\02")); l_2.setStyleSheet(ltxt); l_2.setMinimumWidth(160)
+        l_3 = QLabel(_("\05\02\03")); l_3.setStyleSheet(ltxt); l_3.setMinimumWidth(160)
+        l_4 = QLabel(_("\05\02\04")); l_4.setStyleSheet(ltxt); l_4.setMinimumWidth(160)
+        l_5 = QLabel(_("\05\02\05")); l_5.setStyleSheet(ltxt); l_5.setMinimumWidth(160)
         
+        c_1_1 = QLabel("Ctrl-N")
+        c_1_1.setFont(menu_font)
+        c_1_1.setStyleSheet(_("\01\01"))
+        c_1_1.setMinimumWidth(100)
         icon_1_1 = QWidget()
         icon_1_1.setFixedWidth(26)
         icon_1_1.setContentsMargins(0,0,0,0)
@@ -263,8 +267,13 @@ class HauptFenster(QMainWindow):
         l_1_1.setContentsMargins(0,0,0,0)
         l_1_1.addWidget(icon_1_1)
         l_1_1.addWidget(l_1)
+        l_1_1.addWidget(c_1_1)
         w_1_1.setLayout(l_1_1)
         
+        c_1_2 = QLabel("Ctrl-O")
+        c_1_2.setFont(menu_font)
+        c_1_2.setStyleSheet(_("\01\01"))
+        c_1_2.setMinimumWidth(100)
         icon_1_2 = QWidget()
         icon_1_2.setFixedWidth(26)
         icon_1_2.setContentsMargins(0,0,0,0)
@@ -273,8 +282,13 @@ class HauptFenster(QMainWindow):
         l_1_2.setContentsMargins(0,0,0,0)
         l_1_2.addWidget(icon_1_2)
         l_1_2.addWidget(l_2)
+        l_1_2.addWidget(c_1_2)
         w_1_2.setLayout(l_1_2)
         
+        c_1_3 = QLabel("Ctrl-S")
+        c_1_3.setFont(menu_font)
+        c_1_3.setStyleSheet(_("\01\01"))
+        c_1_3.setMinimumWidth(100)
         icon_1_3 = QWidget()
         icon_1_3.setFixedWidth(26)
         icon_1_3.setContentsMargins(0,0,0,0)
@@ -283,6 +297,7 @@ class HauptFenster(QMainWindow):
         l_1_3.setContentsMargins(0,0,0,0)
         l_1_3.addWidget(icon_1_3)
         l_1_3.addWidget(l_3)
+        l_1_3.addWidget(c_1_3)
         w_1_3.setLayout(l_1_3)
         
         icon_1_4 = QWidget()
@@ -298,7 +313,7 @@ class HauptFenster(QMainWindow):
         icon_1_5 = QWidget()
         icon_1_5.setContentsMargins(0,0,0,0)
         icon_1_5.setFixedWidth(26)
-        icon_1_5.setStyleSheet("background-color:blue;")
+        icon_1_5.setStyleSheet(_("\05\01\04"))
         w_1_5 = QWidget()
         l_1_5 = QHBoxLayout(w_1_5)
         l_1_5.setContentsMargins(0,0,0,0)
@@ -373,8 +388,8 @@ class HauptFenster(QMainWindow):
         
         
         checkbox_header = QHBoxLayout()
-        self.checkbox_header_left  = QCheckBox("Alles auswählen")
-        self.checkbox_header_right = QCheckBox("Alles auswählen")
+        self.checkbox_header_left  = QCheckBox(_("\06\01\01")) # Alles auswählen
+        self.checkbox_header_right = QCheckBox(_("\06\01\02")) # Alles auswählen
         
         self.checkbox_header_left.setMaximumWidth(260)
         self.checkbox_header_left.setMinimumWidth(260)
@@ -382,8 +397,8 @@ class HauptFenster(QMainWindow):
         checkbox_header.addWidget(self.checkbox_header_left)
         checkbox_header.addWidget(self.checkbox_header_right)
         
-        button_chat_part_save   = QPushButton("Speichern")
-        button_chat_part_delete = QPushButton("Lösche markierte Einträge")
+        button_chat_part_save   = QPushButton(_("\06\01\03")) # Speichern
+        button_chat_part_delete = QPushButton(_("\06\01\04")) # Lösche markierte Einträge"
         
         checkbox_header.addWidget(button_chat_part_save)
         checkbox_header.addWidget(button_chat_part_delete)
@@ -990,62 +1005,62 @@ if __name__ == "__main__":
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "in der Syntax des Codes.")
+        print(S1 + _("\05\02\02\06"))
     except IndentationError:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "Einrückung im Code ist nicht korrekt.")
+        print(S1 + _("\05\02\02\07"))
     except NameError as ex:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "Name nicht gefunden: Variable oder Funktion nicht definiert: " + f"{ex}")
+        print(S1 + _("\05\02\02\08") + f"{ex}")
     except ImportError as ex:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "Import fehlgeschalgen: " + f"{ex}")
+        print(S1 + _("\05\02\02\09") + f"{ex}")
     except TypeError as ex:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "Operation auf Datentyp nicht zulässig: " + f"{ex}")
+        print(S1 + _("\05\02\02\0a") + f"{ex}")
     except ValueError:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "Funktion hat gültigen Wert, wird aber falsch aufgerufen.")
+        print(S1 + _("\05\02\02\0b"))
     except ZeroDivisionError:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "Division durch Null ist nicht erlaubt.")
+        print(S1 + _("\05\02\02\0c"))
     except FileNotFoundError:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "Datei oder Verzeichnis existiert nicht.")
+        print(S1 + _("\05\02\02\0d"))
     except IndexError:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "Index für Element liegt ausserhalb des gültigen Bereiches")
+        print(S1 + _("\05\02\02\0e"))
     except KeyError as ex:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "Dictionary-Schlüsselelement nicht vorhanden." + f"{ex}")
+        print(S1 + _("\05\02\02\0f") + f"{ex}")
     except AttributeError as ex:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "Attribut oder Methode für Objekt nicht vorhanden: " + f"{ex}")
+        print(S1 + _("\05\02\02\10") + f"{ex}")
     except RuntimeError:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
         print(S1 + f"in Datei: {letzter_stack_trace.filename}, Zeile: {letzter_stack_trace.lineno}")
-        print(S1 + "kann nicht zugeordnet werden.")
+        print(S1 + _("\05\02\02\11"))
     except Exception as ex:
         _, _, tb = sys.exc_info()
         letzter_stack_trace = traceback.extract_tb(tb)[-1]
