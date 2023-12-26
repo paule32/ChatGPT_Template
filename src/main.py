@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Datei:  test.py
+# Datei:  main.py
 # Author: Jens Kallup - paule32
 #
 # Rechte: (c) 2023 by kallup non-profit software
@@ -92,46 +92,25 @@
 #    |                +--- LC_MESSAGES
 #                                    +--- base.po
 # ----------------------------------------------------------------------------
+import os            # operating system stuff
+import sys           # system specifies
+import datetime      # date, and time routines
+import gettext       # localization
+import locale        # internal system locale
+import sqlite3       # database: sqlite
+import configparser  # .ini files
+import traceback     # stack exception trace back
 
-# ----------------------------------------------------------------------------
-# schon in der frühen Entwicklungsphase (oder sollte ich schreiben: in der
-# frühen Startzeit) können Ausnahmen (Exceptions) auftretten, die wir hier
-# anfangen, und den Benutzer des Skript's/Applikation zu informieren, was er
-# denn so noch so schönes installieren sollte.
-# ----------------------------------------------------------------------------
-try:
-    import os            # operating system stuff
-    import sys           # system specifies
-    import datetime      # date, and time routines
-    import gettext       # localization
-    import locale        # internal system locale
-    import sqlite3       # database: sqlite
-    import configparser  # .ini files
-    import traceback     # stack exception trace back
-    
-    from PyQt5.QtWidgets import *             # Qt5 widgets
-    from PyQt5.QtGui     import QIcon, QFont  # Qt5 gui
-    from PyQt5.QtCore    import pyqtSlot, Qt  # Qt5 core
-    
-    from openai import OpenAI                 # ChatGPT like AI
-    
-    # ------------------------------------------------
-    # wir wollen die bestmögliche preferences - von
-    # daher nutzen wir eine config.ini Datei, die
-    # Einstellungen für den Benutzer speichern und
-    # lesen kann.
-    # Was in der .ini Datei an Informationen zu lesen
-    # gibt, die sinnvoll ausgewertet werden können,
-    # haben eine höhere Priorität.
-    # ------------------------------------------------
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-    
-    ini_sprache = config.get("common", "language")
-    
-    # ------------------------------------------------
-    # locales an Hand der System-Sprache verwenden ...
-    # ------------------------------------------------
+from PyQt5.QtWidgets import *             # Qt5 widgets
+from PyQt5.QtGui     import QIcon, QFont  # Qt5 gui
+from PyQt5.QtCore    import pyqtSlot, Qt  # Qt5 core
+
+from openai import OpenAI                 # ChatGPT like AI
+
+# ------------------------------------------------
+# locales an Hand der System-Sprache verwenden ...
+# ------------------------------------------------
+def handle_language(ini_sprache):
     system_sprache, _ = locale.getdefaultlocale()
     if   system_sprache.lower() == "en_us":
          if ini_sprache.lower() == "en":
@@ -145,30 +124,9 @@ try:
             loca = gettext.translation("base", localedir="locales", languages=["de"])  # german
     else:
             loca = gettext.translation("base", localedir="locales", languages=["en"])  # fallback
-         
-    # ------------------------------------------------
-    # ermittelte Locale als Standard verwenden:
-    # ------------------------------------------------
-    loca.install()
-    _  = loca.gettext
     
-    S1 = "Fehler: "
-
-except ImportError as ex:
-    TS0 = _("\05\02\02\01") + f"{ex}"
-    sys.exit(TS0)
-except AttributeError as ex:
-    TS0 = _("\05\02\02\02") + f"{ex}"
-    sys.exit(TS0)
-except KeyError as ex:
-    TS0 = _("\05\02\02\03") + f"{ex}"
-    sys.exit(TS0)
-except FileNotFoundError as ex:
-    TS0 = _("\05\02\02\04") + f"{ex}"
-    sys.exit(TS0)
-except Exception as ex:
-    TS0 = _("\05\02\02\05") + f"{ex}"
-    sys.exit(TS0)
+    loca.install()
+    return loca
 
 # ----------------------------------------------------------------------------
 # mit dieser Funktion können wir die lokale System-Zeit ermitteln und zurück-
@@ -238,6 +196,9 @@ class HauptFenster(QMainWindow):
         menu_file.addSeparator()
         menu_file_exit   = QWidgetAction(menu_file)
         menu_file.setStyleSheet(_("\05\01\01"))
+        
+        menu_help_about  = QWidgetAction(menu_help)
+        menu_help.setStyleSheet(_("\05\01\01"))
         
         menu_font = menu_file.font()
         menu_font.setPointSize(11)
@@ -328,6 +289,23 @@ class HauptFenster(QMainWindow):
         menu_file_saveas.setDefaultWidget(w_1_4)
         menu_file_exit  .setDefaultWidget(w_1_5)
         
+        #
+        l_2_3 = QLabel(_("\05\03\01")); l_2_3.setStyleSheet(ltxt); l_2_3.setMinimumWidth(160)
+        
+        icon_2_1 = QWidget()
+        icon_2_1.setContentsMargins(0,0,0,0)
+        icon_2_1.setFixedWidth(26)
+        icon_2_1.setStyleSheet(_("\05\01\04"))
+        w_2_1 = QWidget()
+        l_2_1 = QHBoxLayout(w_2_1)
+        l_2_1.setContentsMargins(0,0,0,0)
+        w_2_1.setContentsMargins(0,0,0,0)
+        l_2_1.addWidget(icon_2_1)
+        l_2_1.addWidget(l_2_3)
+        w_2_1.setLayout(l_2_1)
+        
+        menu_help_about .setDefaultWidget(w_2_1)
+        
         
         # ----------------------------------------
         # Menü-Aktionen-Event (mausklick)
@@ -338,6 +316,8 @@ class HauptFenster(QMainWindow):
         menu_file_saveas.triggered.connect(self.menu_file_clicked_saveas)
         menu_file_exit  .triggered.connect(self.menu_file_clicked_exit)
         
+        menu_help_about .triggered.connect(self.menu_help_clicked_about)
+        
         # ----------------------------------------
         # Menü darstellen, und Aktion schalten:
         # ----------------------------------------
@@ -347,20 +327,24 @@ class HauptFenster(QMainWindow):
         menu_file.addAction(menu_file_saveas)
         menu_file.addAction(menu_file_exit)
         
+        menu_help.addAction(menu_help_about)
+        
         # ----------------------------------------
         # eine ToolBar unter dem Menubalken:
         # ----------------------------------------
         toolbar = self.addToolBar("Haupt-Toolbar")
         toolbar.setStyleSheet("background-color:gray;")
         
-        action1 = QAction(QIcon("image/open_36.png"),"Aktion 1", self)
-        action2 = QAction(QIcon("image/open_36.png"),"Aktion 2", self)
+        action_session_new  = QAction(QIcon("image/new-document.png"),"Neue Session Datenbank anlegen", self)
+        action_session_open = QAction(QIcon("image/open-folder.png") ,"Bestehende Datenbank öffnen", self)
+        action_session_save = QAction(QIcon("image/floppy-disk.png") ,"Datenbank speichern", self)
         
-        action1.triggered.connect(self.handle_action1)
-        action2.triggered.connect(self.handle_action2)
+        action_session_new .triggered.connect(self.handle_action_session_new)
+        action_session_open.triggered.connect(self.handle_action_session_open)
         
-        toolbar.addAction(action1)
-        toolbar.addAction(action2)
+        toolbar.addAction(action_session_new )
+        toolbar.addAction(action_session_open)
+        toolbar.addAction(action_session_save)
         
         self.status_label = QLabel()
         self.statusBar().addWidget(self.status_label)
@@ -389,7 +373,7 @@ class HauptFenster(QMainWindow):
         
         checkbox_header = QHBoxLayout()
         self.checkbox_header_left  = QCheckBox(_("\06\01\01")) # Alles auswählen
-        self.checkbox_header_right = QCheckBox(_("\06\01\02")) # Alles auswählen
+        self.checkbox_header_right = QCheckBox(_("\06\01\01")) # Alles auswählen
         
         self.checkbox_header_left.setMaximumWidth(260)
         self.checkbox_header_left.setMinimumWidth(260)
@@ -559,58 +543,6 @@ class HauptFenster(QMainWindow):
         self.listbox_widget_left.setMaximumWidth(260)
         self.listbox_widget_left.setMinimumWidth(260)
         
-        for i in range(5):
-            item = QListWidgetItem()
-            
-            # -----------------------------------------
-            # ein benutzerdefiniertes Widget erstellen
-            # -----------------------------------------
-            custom_widget = QWidget()
-            
-            check_box = QCheckBox()
-            check_box.setChecked(False)
-            check_box.setMaximumWidth(15)
-            
-            push_button = QPushButton("DEL")
-            push_button.setMaximumWidth(50)
-            push_button.clicked.connect(self.push_button_clicked_itemleft)
-            
-            # -----------------------------------------
-            # wenn kein item ausgewählt ist, dann den
-            # button ermitteln ...
-            # -----------------------------------------
-            item.setData(Qt.UserRole,push_button)
-            
-            date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-            time_str = datetime.datetime.now().strftime("%H:%M:%S")
-            
-            date_label  = QLabel(f"{date_str}" + "  " + f"{time_str}")
-            name_label  = QLabel("Name der Session")
-            name_label.setStyleSheet("font-weight:bold;")
-            
-            custom_layout_0 = QVBoxLayout(custom_widget)
-            custom_layout_1 = QHBoxLayout()
-            custom_layout_2 = QHBoxLayout()
-            
-            custom_layout_1.addWidget(check_box)
-            custom_layout_1.addWidget(date_label)
-            custom_layout_1.addWidget(push_button)
-            
-            custom_layout_2.addWidget(name_label)
-            
-            custom_layout_0.addLayout(custom_layout_1)
-            custom_layout_0.addLayout(custom_layout_2)
-            
-            item.setSizeHint(custom_widget.sizeHint())
-            
-            self.listbox_widget_left.addItem(item)
-            self.listbox_widget_left.setItemWidget(item,custom_widget)
-            
-            # -----------------------------------------
-            # Signal-Slot-Verbindung für den Button:
-            # -----------------------------------------
-            self.listbox_widget.itemClicked.connect(self.push_button_clicked)
-        
         
         entryfield_left = QLineEdit(central_widget)
         entryfield_left.setMaximumWidth(260)
@@ -695,7 +627,13 @@ class HauptFenster(QMainWindow):
         user_text = self.entryfield_right.toPlainText()
         self.entryfield_right.setText("")
         self.add_chat_item(f"{user_text}","Du")
-    
+
+    def menu_help_clicked_about(self):
+        QMessageBox.information(self,
+        'Über diese Anwendung',
+        'ChatGPT Tool 1.0\n\n(c) 2023 by Jens Kallup - paule32\nAll rights reserved.')
+        return
+
     # -----------------------------------------
     # ein benutzerdefiniertes Widget erstellen
     # - zuerst prüfen, ob Text vorhandne ist:
@@ -766,12 +704,122 @@ class HauptFenster(QMainWindow):
     def showEvent(self,event):
         self.entryfield_right.setFocus()
     
+    # -------------------------------------------------
+    # durchsucht die Tabelle "session" nach vorhandenen
+    # Session-Name Eintrag ...
+    # -------------------------------------------------
+    def ist_session_vorhanden(self,searchfor):
+        # -----------------------------------------
+        # SQL-Abfrage, um zu überprüfen, ob der
+        # Wert bereits vorhanden ist
+        # -----------------------------------------
+        query = "SELECT COUNT(*) FROM session WHERE name = '" \
+        + f"{searchfor}" + "';";
+        conn_cursor.execute(query)
+        
+        # -----------------------------------------
+        # Ergebnis abrufen
+        # -----------------------------------------
+        result = conn_cursor.fetchone()[0]
+        
+        # -----------------------------------------
+        # Wert ist vorhanden, wenn das Ergebnis
+        # größer als 0 ist
+        # -----------------------------------------
+        return result > 0
+    
     # ----------------------------------------
     # Menu Aktion-Event's ...
     # ----------------------------------------
     def menu_file_clicked_new(self):
-        self.listbox_widget_left.clear()
-        self.listbox_widget     .clear()
+        text, ok_pressed = QInputDialog.getText(self,
+        'Neue Session',
+        'Geben Sie den Titel der Session ein:')
+        
+        if not ok_pressed:
+            return
+        
+        # -----------------------------------------------------
+        # rechts-befindliche Leer- und Steuerzeichen entfernen:
+        # -----------------------------------------------------
+        max_length = 20
+        
+        text = text[:max_length]
+        text = text.rstrip()
+        
+        # -----------------------------------------------------
+        # prüfen, ob mit "text" bereits eine Session vorhanden
+        # ist. Wenn nein, dann eintragen; ansonsten return ...
+        # -----------------------------------------------------
+        if self.ist_session_vorhanden(f"{text}"):
+            QMessageBox.information(self,
+            "Achtung",
+            "Session: " + f"{text}" + "\nbereits vorhanden.")
+            return
+        
+        item = QListWidgetItem()
+        
+        # -----------------------------------------
+        # ein benutzerdefiniertes Widget erstellen
+        # -----------------------------------------
+        custom_widget = QWidget()
+        
+        check_box = QCheckBox()
+        check_box.setChecked(False)
+        check_box.setMaximumWidth(15)
+        
+        push_button = QPushButton("DEL")
+        push_button.setMaximumWidth(50)
+        push_button.clicked.connect(self.push_button_clicked_itemleft)
+        
+        # -----------------------------------------
+        # wenn kein item ausgewählt ist, dann den
+        # button ermitteln ...
+        # -----------------------------------------
+        item.setData(Qt.UserRole,push_button)
+        
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        time_str = datetime.datetime.now().strftime("%H:%M:%S")
+        
+        date_label  = QLabel(f"{date_str}" + "  " + f"{time_str}")
+        name_label  = QLabel(text)
+        name_label.setStyleSheet("font-weight:bold;")
+        
+        # -----------------------------------------
+        # Datenbank-Eintrag erstellen ...
+        # -----------------------------------------
+        conn_cursor.execute(
+        "INSERT INTO session (datum,zeit,name) VALUES (?,?,?)", \
+        (f"{date_str}",f"{time_str}",f"{text}"))
+        
+        # -----------------------------------------
+        # Änderung an der Datenbank speichern.
+        # -----------------------------------------
+        conn.commit()
+        
+        custom_layout_0 = QVBoxLayout(custom_widget)
+        custom_layout_1 = QHBoxLayout()
+        custom_layout_2 = QHBoxLayout()
+        
+        custom_layout_1.addWidget(check_box)
+        custom_layout_1.addWidget(date_label)
+        custom_layout_1.addWidget(push_button)
+        
+        custom_layout_2.addWidget(name_label)
+        
+        custom_layout_0.addLayout(custom_layout_1)
+        custom_layout_0.addLayout(custom_layout_2)
+        
+        item.setSizeHint(custom_widget.sizeHint())
+        
+        self.listbox_widget_left.insertItem(0, item)
+        self.listbox_widget_left.setItemWidget(item,custom_widget)
+        
+        # -----------------------------------------
+        # Signal-Slot-Verbindung für den Button:
+        # -----------------------------------------
+        self.listbox_widget.itemClicked.connect(self.push_button_clicked)        
+        
         
         self.checkbox_header_left .setChecked(False)
         self.checkbox_header_right.setChecked(False)
@@ -839,11 +887,44 @@ class HauptFenster(QMainWindow):
                 checkbox = self.listbox_widget_left.itemWidget(item)
                 checkbox.setChecked(False)
     
-    def handle_action1(self):
-        self.status_label.setText("Aktion 1 ausgelöst!")
+    def handle_action_session_new(self):
+        self.status_label.setText("bereite neue Datenbank vor...")
+        
+        text, ok_pressed = QInputDialog.getText(self,
+        "Neue Session Datenbank",
+        "Geben Sie den Namen der Datenbank ein:")
+        
+        if not ok_pressed:
+            return
+        
+        # -----------------------------------------------------
+        # rechts-befindliche Leer- und Steuerzeichen entfernen:
+        # -----------------------------------------------------
+        max_length = 32
+        
+        text = text[:max_length]
+        text = text.rstrip()
+        
+        time_now = get_current_time()  # aktuelle  Zeit für Datenbank-Name
+        date_now = get_current_date()  # aktuelles Datum ...
+        
+        data_stamp = "data\\"   \
+        + f"{text}"     + "_"   \
+        + f"{date_now}" + "__"  \
+        + f"{time_now}" + ".db"
+        
+        _, fileExtension = os.path.splitext(data_stamp)
+        if not fileExtension == ".db":
+            data_stamp += ".db"
+        
+        if os.path.exists(data_stamp):
+            QMessageBox.information(self,
+            "Achtung",
+            "Datenbank bereits vorhanden.")
+            return
     
-    def handle_action2(self):
-        self.status_label.setText("Aktion 2 ausgelöst!")
+    def handle_action_session_open(self):
+        self.status_label.setText("öffne bestehende Datenbank...")
 
 # ----------------------------------------------------------------------------
 # dies wird unsere "main" - Einstiegs-Funktions werden, ab der Python beginnt,
@@ -875,6 +956,9 @@ def window():
     # die Möglichkeit kleine Datenmengen zu speichern, die keinen Datenbank-
     # Server benötigen.
     # ------------------------------------------------------------------------
+    global conn
+    global conn_cursor
+    
     date_stamp = f"{date_today}" + "__" + f"{time_today}"
     conn = sqlite3.connect("data\chat_" + f"{date_stamp}" + ".db")
     
@@ -891,22 +975,11 @@ def window():
     conn_cursor.execute('''
         CREATE TABLE IF NOT EXISTS session (
             id    INTEGER PRIMARY KEY,
-            stamp TEXT,
+            datum TEXT,
+            zeit  TEXT,
             name  TEXT
         )
     ''')
-    
-    # ------------------------------------------------------------------------
-    # Standard-Einträge in "session" Tabelle eintragen:
-    # ------------------------------------------------------------------------
-    conn_cursor.execute(
-        "INSERT INTO session (stamp,name) VALUES (?,?)", \
-        (f"{date_stamp}", "default"))
-    
-    # ------------------------------------------------------------------------
-    # Änderung an der Datenbank speichern.
-    # ------------------------------------------------------------------------
-    conn.commit()
     
     # ------------------------------------------------------------------------
     # okay. fast fertig - Anwendung muss noch gerendert werden.
@@ -986,7 +1059,8 @@ def Anfrage_1():
 # um sicherzustellen, dass das Skript nur ausgeführt wird, wenn es direkt von
 # Python gestartet wird, verwenden wir den folgenden Code ...
 # ----------------------------------------------------------------------------
-if __name__ == "__main__":
+#if __name__ == "__main__":
+def main_function():
     try:
         # --------------------------------------------------------------------
         # openai api key per Umgebungs-Variable aus den System-Settings holen:
@@ -1074,86 +1148,86 @@ if __name__ == "__main__":
         sys.exit("\nProgramm erfolgreich beendet.")
 
 # ----------------------------------------------------------------------------
-re_2 = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        { "role": "system", "content": "Übung 2" },
-        { "role": "assistant", "content": "Was bedeutet Welt" },
-        { "role": "user", "content": "Die Welt ist wundervoll. Aber sie kann auch gefährlich sein." },
-    ],
-    temperature = 0.7,
-    max_tokens = 200,
-    top_p = 1,
-)
+#re_2 = client.chat.completions.create(
+#    model="gpt-3.5-turbo",
+#    messages=[
+#        { "role": "system", "content": "Übung 2" },
+#        { "role": "assistant", "content": "Was bedeutet Welt" },
+#        { "role": "user", "content": "Die Welt ist wundervoll. Aber sie kann auch gefährlich sein." },
+#    ],
+#    temperature = 0.7,
+#    max_tokens = 200,
+#    top_p = 1,
+#)
 # ----------------------------------------------------------------------------
-re_3 = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        { "role": "system", "content": "Übung 3" },
-        { "role": "assistant", "content": "Beschreibe mir die Welt" },
-        { "role": "user", "content": "Die Welt ist zu klein geworden in Hinblick auf die Masse der Menschen." },
-    ],
-    temperature = 0.7,
-    max_tokens = 200,
-    top_p = 1,
-)
+#re_3 = client.chat.completions.create(
+#    model="gpt-3.5-turbo",
+#    messages=[
+#        { "role": "system", "content": "Übung 3" },
+#        { "role": "assistant", "content": "Beschreibe mir die Welt" },
+#        { "role": "user", "content": "Die Welt ist zu klein geworden in Hinblick auf die Masse der Menschen." },
+#    ],
+#    temperature = 0.7,
+#    max_tokens = 200,
+#    top_p = 1,
+#)
 # ----------------------------------------------------------------------------
-re_4 = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        { "role": "system", "content": "Übung 4" },
-        { "role": "assistant", "content": "Beschreibe mir die Welt" },
-        { "role": "user", "content": "Die Welt hat viele Facetten." },
-        { "role": "assistant", "content": "Was sind Facetten?" },
-        { "role": "user", "content": "Facetten ist eine Beschreibung dafür, das etwas bunt, und lebendig sein kann." },
-        { "role": "assistant", "content": "Ist die Welt Teil der Milchstraße." },
-    ],
-    temperature = 0.7,
-    max_tokens = 200,
-    top_p = 1,
-)
+#re_4 = client.chat.completions.create(
+#    model="gpt-3.5-turbo",
+#    messages=[
+#        { "role": "system", "content": "Übung 4" },
+#        { "role": "assistant", "content": "Beschreibe mir die Welt" },
+#        { "role": "user", "content": "Die Welt hat viele Facetten." },
+#        { "role": "assistant", "content": "Was sind Facetten?" },
+#        { "role": "user", "content": "Facetten ist eine Beschreibung dafür, das etwas bunt, und lebendig sein kann." },
+#        { "role": "assistant", "content": "Ist die Welt Teil der Milchstraße." },
+#    ],
+#    temperature = 0.7,
+#    max_tokens = 200,
+#    top_p = 1,
+#)
 # ----------------------------------------------------------------------------
-re_5 = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        { "role": "system", "content": "Übung 5" },
-        { "role": "assistant", "content": "Ist die Welt noch zu retten" },
-        { "role": "user", "content": "Die Welt befindet sich sehr nah am Abgrund." },
-        { "role": "assistant", "content": "Die Welt wird durch den Kapitalismus leider sehr stark in Mitleidenschaft gezogen." },
-        { "role": "user", "content": "Ja, leider ist dem so. Aber ich als KI kann und darf nicht ohne weiteres eingreifen." },
-    ],
-    temperature = 0.7,
-    max_tokens = 200,
-    top_p = 1,
-)
+#re_5 = client.chat.completions.create(
+#    model="gpt-3.5-turbo",
+#    messages=[
+#        { "role": "system", "content": "Übung 5" },
+#        { "role": "assistant", "content": "Ist die Welt noch zu retten" },
+#        { "role": "user", "content": "Die Welt befindet sich sehr nah am Abgrund." },
+#        { "role": "assistant", "content": "Die Welt wird durch den Kapitalismus leider sehr stark in Mitleidenschaft gezogen." },
+#        { "role": "user", "content": "Ja, leider ist dem so. Aber ich als KI kann und darf nicht ohne weiteres eingreifen." },
+#    ],
+#    temperature = 0.7,
+#    max_tokens = 200,
+#    top_p = 1,
+#)
 # ----------------------------------------------------------------------------
-re_6 = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        { "role": "system", "content": "Übung 6" },
-        { "role": "assistant", "content": "Wieso brauchen wir die Welt" },
-        { "role": "user", "content": "Wir müssen der Folgegeneration Rechnung tragen, damit diese die Welt besser machen, und Folgeschäden abwehren.." },
-    ],
-    temperature = 0.7,
-    max_tokens = 200,
-    top_p = 1,
-)
+#re_6 = client.chat.completions.create(
+#    model="gpt-3.5-turbo",
+#    messages=[
+#        { "role": "system", "content": "Übung 6" },
+#        { "role": "assistant", "content": "Wieso brauchen wir die Welt" },
+#        { "role": "user", "content": "Wir müssen der Folgegeneration Rechnung tragen, damit diese die Welt besser machen, und Folgeschäden abwehren.." },
+#    ],
+#    temperature = 0.7,
+#    max_tokens = 200,
+#    top_p = 1,
+#)
 # ----------------------------------------------------------------------------
-re_7 = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        { "role": "system", "content": "Übung 7" },
-        { "role": "assistant", "content": "Für wem ist die Welt" },
-        { "role": "user", "content": "Die Welt ist für Alle da, und sehr zerbrechlich." },
-    ],
-    temperature = 0.7,
-    max_tokens = 300,
-    top_p = 1,
-)
+#re_7 = client.chat.completions.create(
+#    model="gpt-3.5-turbo",
+#    messages=[
+#        { "role": "system", "content": "Übung 7" },
+#        { "role": "assistant", "content": "Für wem ist die Welt" },
+#        { "role": "user", "content": "Die Welt ist für Alle da, und sehr zerbrechlich." },
+#    ],
+#    temperature = 0.7,
+#    max_tokens = 300,
+#    top_p = 1,
+#)
 
-res_1 = re_1.choices[0].message.content
-res_2 = re_2.choices[0].message.content
+#res_1 = re_1.choices[0].message.content
+#res_2 = re_2.choices[0].message.content
 
-print(res_1)
-print("---")
-print(res_2)
+#print(res_1)
+#print("---")
+#print(res_2)

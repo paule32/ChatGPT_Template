@@ -106,6 +106,9 @@ msgstr "Speicher als"
 msgid "\05\02\05"
 msgstr "Beenden"
 
+msgid "\05\03\01"
+msgstr "Über..."
+
 # menü file: icon widget
 msgid "\05\01\04"
 msgstr "background-color:blue;"
