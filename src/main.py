@@ -145,6 +145,79 @@ def get_current_date():
     return datetime.datetime.now().strftime("%Y_%m_%d")
 
 # ----------------------------------------------------------------------------
+# item
+# ----------------------------------------------------------------------------
+class SessionDatabaseListBoxWidget(QWidget):
+    def __init__(self, date_str, time_str , text):
+        super(SessionDatabaseListBoxWidget, self).__init__()
+        self.text = text
+    
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            print(f"{self.text}")
+
+class SessionDatabaseListboxItem(QListWidgetItem):
+    def __init__(self, text, listbox, date_str, time_str, extra_data=None):
+        super(SessionDatabaseListboxItem, self).__init__(text)
+        
+        self.extra_data = extra_data
+        
+        # -----------------------------------------
+        # ein benutzerdefiniertes Widget erstellen
+        # -----------------------------------------
+        custom_widget = SessionDatabaseListBoxWidget( \
+        f"{date_str}",  \
+        f"{time_str}",  f"{text}")
+        
+        check_box = QCheckBox()
+        check_box.setChecked(False)
+        check_box.setMaximumWidth(15)
+        
+        push_button = QPushButton("DEL")
+        push_button.setMaximumWidth(50)
+        push_button.clicked.connect(self.push_button_clicked)
+        
+        date_label  = QLabel(f"{date_str}" + "  " + f"{time_str}")
+        name_label  = QLabel(text)
+        name_label.setStyleSheet("font-weight:bold;")
+        
+        
+        custom_layout_0 = QVBoxLayout(custom_widget)
+        custom_layout_1 = QHBoxLayout()
+        custom_layout_2 = QHBoxLayout()
+        
+        custom_layout_1.addWidget(check_box)
+        custom_layout_1.addWidget(date_label)
+        custom_layout_1.addWidget(push_button)
+        
+        custom_layout_2.addWidget(name_label)
+        
+        custom_layout_0.addLayout(custom_layout_1)
+        custom_layout_0.addLayout(custom_layout_2)
+        
+        self.setSizeHint(custom_widget.sizeHint())
+        
+        listbox.insertItem(0, self)
+        listbox.setItemWidget(self, custom_widget)
+        
+        # -----------------------------------------
+        # Signal-Slot-Verbindung für den Button:
+        # -----------------------------------------
+        #self.listbox_widget.itemClicked.connect(self.push_button_clicked)
+    
+    def item_clicked(self, item):
+        print(f"{item.text()}")
+    
+    # ----------------------------------------
+    # item aus der linken ListBox entfernen
+    # ----------------------------------------
+    def push_button_clicked(self):
+        selected_item = self.listbox_widget_left.currentItem()
+        if selected_item is not None:
+            row = self.listbox_widget_left.row(selected_item)
+            self.listbox_widget_left.takeItem(row)
+
+# ----------------------------------------------------------------------------
 # das HauptFenster ist unsere Haupt-Anwendung GUI (graphical user interface).
 # ----------------------------------------------------------------------------
 class HauptFenster(QMainWindow):
@@ -401,7 +474,7 @@ class HauptFenster(QMainWindow):
         # ----------------------------------------
         vbox_right_container      = QVBoxLayout()
         vbox_right_container_main = QVBoxLayout()
-
+        
         # ----------------------------------------
         # Debug
         # ----------------------------------------
@@ -600,15 +673,6 @@ class HauptFenster(QMainWindow):
         self.setWindowTitle("ChatGPT Toying Application (c) 2023 by paule32")
         self.show()
     
-    # ----------------------------------------
-    # item aus der linken ListBox entfernen
-    # ----------------------------------------
-    def push_button_clicked_itemleft(self):
-        selected_item = self.listbox_widget_left.currentItem()
-        if selected_item is not None:
-            row = self.listbox_widget_left.row(selected_item)
-            self.listbox_widget_left.takeItem(row)
-    
     def push_button_clicked(self,item):
         button = item.data(Qt.UserRole)
         if button is not None:
@@ -756,34 +820,9 @@ class HauptFenster(QMainWindow):
             "Achtung",
             "Session: " + f"{text}" + "\nbereits vorhanden.")
             return
-        
-        item = QListWidgetItem()
-        
-        # -----------------------------------------
-        # ein benutzerdefiniertes Widget erstellen
-        # -----------------------------------------
-        custom_widget = QWidget()
-        
-        check_box = QCheckBox()
-        check_box.setChecked(False)
-        check_box.setMaximumWidth(15)
-        
-        push_button = QPushButton("DEL")
-        push_button.setMaximumWidth(50)
-        push_button.clicked.connect(self.push_button_clicked_itemleft)
-        
-        # -----------------------------------------
-        # wenn kein item ausgewählt ist, dann den
-        # button ermitteln ...
-        # -----------------------------------------
-        item.setData(Qt.UserRole,push_button)
-        
+            
         date_str = datetime.datetime.now().strftime("%Y-%m-%d")
         time_str = datetime.datetime.now().strftime("%H:%M:%S")
-        
-        date_label  = QLabel(f"{date_str}" + "  " + f"{time_str}")
-        name_label  = QLabel(text)
-        name_label.setStyleSheet("font-weight:bold;")
         
         # -----------------------------------------
         # Datenbank-Eintrag erstellen ...
@@ -791,38 +830,32 @@ class HauptFenster(QMainWindow):
         conn_cursor.execute(
         "INSERT INTO session (datum,zeit,name) VALUES (?,?,?)", \
         (f"{date_str}",f"{time_str}",f"{text}"))
-        
+    
         # -----------------------------------------
         # Änderung an der Datenbank speichern.
         # -----------------------------------------
         conn.commit()
         
-        custom_layout_0 = QVBoxLayout(custom_widget)
-        custom_layout_1 = QHBoxLayout()
-        custom_layout_2 = QHBoxLayout()
+        item = SessionDatabaseListboxItem( \
+            text,                          \
+            self.listbox_widget_left,      \
+            f"{date_str}",                 \
+            f"{time_str}",                 \
+            extra_data={"key": "value"})
         
-        custom_layout_1.addWidget(check_box)
-        custom_layout_1.addWidget(date_label)
-        custom_layout_1.addWidget(push_button)
         
-        custom_layout_2.addWidget(name_label)
-        
-        custom_layout_0.addLayout(custom_layout_1)
-        custom_layout_0.addLayout(custom_layout_2)
-        
-        item.setSizeHint(custom_widget.sizeHint())
-        
-        self.listbox_widget_left.insertItem(0, item)
-        self.listbox_widget_left.setItemWidget(item,custom_widget)
-        
-        # -----------------------------------------
-        # Signal-Slot-Verbindung für den Button:
-        # -----------------------------------------
-        self.listbox_widget.itemClicked.connect(self.push_button_clicked)        
-        
+        #QListWidgetItem()
+        #list_session_items.append(item)
+        #ööö
         
         self.checkbox_header_left .setChecked(False)
         self.checkbox_header_right.setChecked(False)
+    
+    def left_listbox_item_clicked(self,item):
+        QMessageBox.information(self,
+        "kuku",
+        f"{item.text()}")
+        return
     
     def menu_file_clicked_open(self):
         print("open clicked")
@@ -1062,6 +1095,15 @@ def Anfrage_1():
 #if __name__ == "__main__":
 def main_function():
     try:
+        # --------------------------------------------------------------------
+        # widget item array für die Session-Liste
+        # --------------------------------------------------------------------
+        global list_session_items
+        global list_session_counter
+        
+        list_session_counter = 1
+        list_session_items   = []
+        
         # --------------------------------------------------------------------
         # openai api key per Umgebungs-Variable aus den System-Settings holen:
         # --------------------------------------------------------------------

@@ -15,7 +15,7 @@ if %errorlevel% neq 0 ( goto fehler_compile_cache )
 @python -m compileall start.py
 if %errorlevel% neq 0 ( goto fehler_compile_cache )
 goto Ende
-
+rem pyinstaller --onefile start.py
 :fehler_lc_messages
 echo Fehler aufgetretten: LC_MESSAGES
 goto skipper
